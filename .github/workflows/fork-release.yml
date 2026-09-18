@@ -2,11 +2,10 @@ name: Fork Release
 
 # Fork-friendly release workflow.
 #
-# The upstream release.yml cannot run on a fork: its release job gates on
-# all five platform installers and, on GA tags, force-pushes to WSJTX/wsjtx
-# using a CROSS_REPO_TOKEN secret a fork does not have. This workflow builds
-# only the Linux (x86_64) and Windows installers and publishes them to a
-# Release on this fork, so the .deb / .AppImage / .exe are easy to download.
+# Mirrors the official release.yml platform matrix (macOS arm64 + intel,
+# Linux x86_64 + aarch64, Windows x86_64) and attaches the same asset types
+# to a Release, but without the parts a fork cannot do: the upstream
+# WSJTX/wsjtx force-push and its CROSS_REPO_TOKEN secret.
 #
 # Trigger it from the Actions tab (Fork Release -> Run workflow). The version
 # is read from CMakeLists.txt, matching the same source of truth CI uses.
@@ -45,6 +44,44 @@ jobs:
             echo "tag=$TAG"
           } >> "$GITHUB_OUTPUT"
 
+  macos-arm64-qt:
+    needs: prepare
+    uses: ./.github/workflows/prepare-macos-qt.yml
+    with:
+      arch: "arm64"
+      runner: "macos-15"
+      deployment_target: "11.0"
+
+  macos-intel-qt:
+    needs: prepare
+    uses: ./.github/workflows/prepare-macos-qt.yml
+    with:
+      arch: "x86_64"
+      runner: "macos-15-intel"
+      deployment_target: "10.13"
+
+  macos:
+    needs: [prepare, macos-arm64-qt]
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      hamlib_branch: "4.7.1"
+      arch: "arm64"
+      runner: "macos-15"
+      deployment_target: "11.0"
+    secrets: inherit
+
+  macos-intel:
+    needs: [prepare, macos-intel-qt]
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      hamlib_branch: "4.7.1"
+      arch: "x86_64"
+      runner: "macos-15-intel"
+      deployment_target: "10.13"
+    secrets: inherit
+
   linux:
     needs: prepare
     uses: ./.github/workflows/build-linux.yml
@@ -52,6 +89,15 @@ jobs:
       version: ${{ needs.prepare.outputs.version }}
       hamlib_branch: "4.7.1"
       arch: "x86_64"
+    secrets: inherit
+
+  linux-arm:
+    needs: prepare
+    uses: ./.github/workflows/build-linux.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      hamlib_branch: "4.7.1"
+      arch: "aarch64"
     secrets: inherit
 
   windows:
@@ -63,18 +109,70 @@ jobs:
     secrets: inherit
 
   release:
-    needs: [prepare, linux, windows]
+    needs: [prepare, macos, macos-intel, linux, linux-arm, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
           path: artifacts
 
+      - name: Build source tarball
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          git archive \
+            --format=tar.gz \
+            --prefix="wsjtx-${VERSION}/" \
+            -o "artifacts/wsjtx-${VERSION}-src.tar.gz" \
+            HEAD
+
       - name: List artifacts
         run: find artifacts -type f | sort
+
+      - name: Report installer-grade artifacts
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          shopt -s nullglob
+          labels=(
+            "macOS arm64 .pkg"
+            "macOS x86_64 .pkg"
+            "Linux x86_64 .AppImage"
+            "Linux aarch64 .AppImage"
+            "Windows x86_64 .exe"
+          )
+          patterns=(
+            "artifacts/wsjtx-${VERSION}-arm64-macOS.pkg/*.pkg"
+            "artifacts/wsjtx-${VERSION}-x86_64-macOS.pkg/*.pkg"
+            "artifacts/wsjtx-${VERSION}-linux-x86_64-AppImage/*.AppImage"
+            "artifacts/wsjtx-${VERSION}-linux-aarch64-AppImage/*.AppImage"
+            "artifacts/wsjtx-${VERSION}-windows-x86_64-installer/*.exe"
+          )
+          missing=0
+          echo "Installer-grade artifact summary — checking 5 platforms…"
+          for i in "${!labels[@]}"; do
+            # shellcheck disable=SC2206 # word-split is intentional; nullglob makes it safe.
+            matches=( ${patterns[$i]} )
+            if [ ${#matches[@]} -eq 0 ]; then
+              echo "::warning::MISSING  ${labels[$i]} — no match for ${patterns[$i]}"
+              missing=$((missing + 1))
+            else
+              size=$(stat --printf '%s' "${matches[0]}")
+              printf '  ok  %-22s %s (%s bytes)\n' "${labels[$i]}" "${matches[0]}" "$size"
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo "::warning::$missing of 5 platform(s) missing an installer-grade artifact; publishing a partial release anyway."
+          else
+            echo "All 5 installer-grade artifacts present."
+          fi
 
       - name: Create or update GitHub Release
         env:
@@ -84,7 +182,8 @@ jobs:
         run: |
           shopt -s nullglob
           mapfile -t files < <(find artifacts -maxdepth 2 -type f \
-            \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.exe" \) | sort)
+            \( -name "*.pkg" -o -name "*.AppImage" -o -name "*.deb" \
+               -o -name "*.exe" -o -name "*.tar.gz" -o -name "*.rpm" \) | sort)
           if [ ${#files[@]} -eq 0 ]; then
             echo "::error::No release assets found under artifacts/"
             find artifacts -type f | sort
