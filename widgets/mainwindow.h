@@ -1198,6 +1198,9 @@ private:
   QLabel ndecodes_label;
   QProgressBar progressBar;
   QLabel watchdog_label;
+  QLabel qso_count_label;         // total QSOs logged, and QSOs logged on the current band
+  QHash<QString, int> m_qsoCountByBand;
+  int m_qsoCountTotal = 0;
   QLabel * m_txFrequencyLabel {};
   QLabel * m_frequencyToleranceLabel {};
   QLabel * m_rxFrequencyLabel {};
@@ -1489,6 +1492,8 @@ private:
                               quint32 hold_rx, quint32 release_rx,
                               quint32 expiries, quint32 invalid);
   void startTxAudioAfterPttDelay ();
+  void loadQSOCounts();
+  void updateQSOCountLabel();
   void updateStatusBar();
   void updateMainWindowAccessibility();
   void registerMainWindowFocusControls();
