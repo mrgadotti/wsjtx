@@ -19,6 +19,6 @@ cd hamlib-src
   --disable-shared --enable-static \
   --without-cxx-binding \
   CFLAGS="-mmacosx-version-min=${deployment_target}" \
-  LDFLAGS="-mmacosx-version-min=${deployment_target}"
+  LDFLAGS="-mmacosx-version-min=${deployment_target} -Wl,-headerpad_max_install_names"
 make -j"$(sysctl -n hw.ncpu)"
 make install
