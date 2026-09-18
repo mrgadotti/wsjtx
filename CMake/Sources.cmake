@@ -164,6 +164,8 @@ set (wsjtx_CXXSRCS
   widgets/TxDriveSlider.cpp
   widgets/plotter.cpp
   widgets/widegraph.cpp
+  widgets/verticalplotter.cpp
+  widgets/verticalwaterfall.cpp
   widgets/echograph.cpp
   widgets/echoplot.cpp
   widgets/fastgraph.cpp
@@ -723,6 +725,7 @@ set (wsjtx_UISRCS
   widgets/messageaveraging.ui
   widgets/activeStations.ui
   widgets/widegraph.ui
+  widgets/verticalwaterfall.ui
   widgets/logqso.ui
   widgets/ExportCabrillo.ui
   widgets/QSYMessage.ui

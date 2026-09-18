@@ -79,6 +79,7 @@ void MainWindow::writeSettings()
   m_settings->setValue("QSYMessageCreatorDisplayed", m_QSYMessageCreatorWidget && m_QSYMessageCreatorWidget->isVisible ());
   m_settings->setValue("ShowQSYMessages", ui->actionEnable_QSY_Popups->isChecked());
   m_settings->setValue("QSYMonitorDisplayed", m_qsymonitorWidget && m_qsymonitorWidget->isVisible ());
+  m_settings->setValue("VerticalWaterfallDisplayed", m_wideGraph->vertWaterfallVisible());
   m_settings->setValue("RespondCQ",static_cast<int> (autoRespondPolicy ()));
   m_settings->setValue("HoundSort",ui->comboBoxHoundSort->currentIndex());
   m_settings->setValue("FoxNlist",ui->sbNlist->value());
@@ -303,6 +304,7 @@ void MainWindow::readSettings()
   bool displayActiveStations = m_settings->value ("ActiveStationsDisplayed", false).toBool ();
   bool displayQSYMessageCreator = m_settings->value ("QSYMessageCreatorDisplayed", false).toBool ();
   bool displayQSYMonitor = m_settings->value("QSYMonitorDisplayed", false).toBool ();
+  bool displayVerticalWaterfall = m_settings->value ("VerticalWaterfallDisplayed", false).toBool ();
   bool enableQSYpopups = m_settings->value("ShowQSYMessages", true).toBool ();
   auto const respondPolicy = m_settings->value(
     "RespondCQ", static_cast<int> (AutoRespondPolicy::None)).toInt();
@@ -633,5 +635,6 @@ void MainWindow::readSettings()
   if (displayActiveStations) on_actionActiveStations_triggered();
   if (displayQSYMessageCreator) on_actionQSYMessage_Creator_triggered();
   if (displayQSYMonitor) on_actionQSY_Monitor_triggered();
+  if (displayVerticalWaterfall) on_actionVertical_Waterfall_triggered();
 
 }

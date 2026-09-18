@@ -4501,6 +4501,11 @@ void MainWindow::on_actionWide_Waterfall_triggered()      //Display Waterfalls
   m_wideGraph->showNormal();
 }
 
+void MainWindow::on_actionVertical_Waterfall_triggered()  //Display Vertical Waterfall
+{
+  m_wideGraph->showVerticalWaterfall();
+}
+
 void MainWindow::on_actionEcho_Graph_triggered()
 {
   m_echoGraph->showNormal();
