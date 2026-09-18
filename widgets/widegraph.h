@@ -29,6 +29,7 @@ public:
 
   void   dataSink2(float s[], float df3, int ihsym, int ndiskdata, float pdB);
   void   showVerticalWaterfall();
+  void   showWideWaterfall();
   bool   vertWaterfallVisible() const;
   void   setRxFreq(int n);
   int    rxFreq();
