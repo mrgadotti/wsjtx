@@ -134,9 +134,18 @@ WideGraph::~WideGraph ()
 
 void WideGraph::showVerticalWaterfall()
 {
+  hide();                              // only one of the two waterfalls is active at a time
   m_vertWaterfall->showNormal();
   m_vertWaterfall->raise();
   m_vertWaterfall->activateWindow();
+}
+
+void WideGraph::showWideWaterfall()
+{
+  if (m_vertWaterfall) m_vertWaterfall->hide();
+  showNormal();
+  raise();
+  activateWindow();
 }
 
 bool WideGraph::vertWaterfallVisible() const

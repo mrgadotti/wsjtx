@@ -1177,7 +1177,9 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   ui->txFirstCheckBox->setChecked(m_txFirst);
   morse_(const_cast<char *> (m_config.my_callsign ().toLatin1().constData()),
          const_cast<int *> (icw), &m_ncw, (FCL)m_config.my_callsign().length());
-  on_actionWide_Waterfall_triggered();
+  // readSettings() above may already have restored the Vertical Waterfall as the
+  // active view; don't clobber that choice by unconditionally showing the horizontal one.
+  if (!m_wideGraph->vertWaterfallVisible()) on_actionWide_Waterfall_triggered();
   ui->cbShMsgs->setChecked(m_bShMsgs);
   ui->cbSWL->setChecked(m_bSWL);
   if(m_bFast9) m_bFastMode=true;
@@ -4647,7 +4649,7 @@ void MainWindow::on_actionLocal_User_Guide_triggered()
 
 void MainWindow::on_actionWide_Waterfall_triggered()      //Display Waterfalls
 {
-  m_wideGraph->showNormal();
+  m_wideGraph->showWideWaterfall();
 }
 
 void MainWindow::on_actionVertical_Waterfall_triggered()  //Display Vertical Waterfall
