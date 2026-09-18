@@ -635,6 +635,12 @@ void MainWindow::readSettings()
   if (displayActiveStations) on_actionActiveStations_triggered();
   if (displayQSYMessageCreator) on_actionQSYMessage_Creator_triggered();
   if (displayQSYMonitor) on_actionQSY_Monitor_triggered();
-  if (displayVerticalWaterfall) on_actionVertical_Waterfall_triggered();
+  // Exactly one of Wide/Vertical Waterfall is always active; setChecked() only
+  // emits toggled() when the state actually changes, so call the show method
+  // directly too rather than relying on that side effect for the first setup.
+  ui->actionVertical_Waterfall->setChecked (displayVerticalWaterfall);
+  ui->actionWide_Waterfall->setChecked (!displayVerticalWaterfall);
+  if (displayVerticalWaterfall) m_wideGraph->showVerticalWaterfall();
+  else m_wideGraph->showWideWaterfall();
 
 }

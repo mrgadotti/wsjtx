@@ -730,6 +730,13 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
     "QFrame { border: 2px solid #0a84ff; border-radius: 4px; background: transparent; }");
   m_message_selector_focus_frame->setGeometry (ui->tabWidget->tabBar ()->rect ());
   m_message_selector_focus_frame->hide ();
+  // Wide Waterfall and Vertical Waterfall are two views of the same data; exactly
+  // one is ever shown, so present them in the View menu as a radio-button pair.
+  auto waterfallOrientationGroup = new QActionGroup (this);
+  waterfallOrientationGroup->setExclusive (true);
+  waterfallOrientationGroup->addAction (ui->actionWide_Waterfall);
+  waterfallOrientationGroup->addAction (ui->actionVertical_Waterfall);
+
   setUnifiedTitleAndToolBarOnMac (true);
   createStatusBar();
   updateMainWindowAccessibility();
@@ -1628,9 +1635,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   morse_(const_cast<char *> (m_config.my_callsign ().toLatin1().constData()),
          const_cast<int *> (icw), &m_ncw, (FCL)m_config.my_callsign().length());
   PerformanceTrace::Phase mode_initialize {m_startup_trace_run, "mode.initialize"};
-  // readSettings() above may already have restored the Vertical Waterfall as the
-  // active view; don't clobber that choice by unconditionally showing the horizontal one.
-  if (!m_wideGraph->vertWaterfallVisible()) on_actionWide_Waterfall_triggered();
+  // Wide/Vertical Waterfall visibility was already established by readSettings() above.
   ui->cbShMsgs->setChecked(m_bShMsgs);
   ui->cbSWL->setChecked(m_bSWL);
   if(m_bFast9) m_bFastMode=true;
@@ -4532,14 +4537,14 @@ void MainWindow::on_actionLocal_User_Guide_triggered()
 #endif
 }
 
-void MainWindow::on_actionWide_Waterfall_triggered()      //Display Waterfalls
+void MainWindow::on_actionWide_Waterfall_toggled (bool checked)      //Display Waterfalls
 {
-  m_wideGraph->showWideWaterfall();
+  if (checked) m_wideGraph->showWideWaterfall();
 }
 
-void MainWindow::on_actionVertical_Waterfall_triggered()  //Display Vertical Waterfall
+void MainWindow::on_actionVertical_Waterfall_toggled (bool checked)  //Display Vertical Waterfall
 {
-  m_wideGraph->showVerticalWaterfall();
+  if (checked) m_wideGraph->showVerticalWaterfall();
 }
 
 void MainWindow::on_actionEcho_Graph_triggered()
@@ -10755,7 +10760,7 @@ void MainWindow::on_actionFST4_triggered()
   m_bFast9=false;
   m_bFastMode=false;
   m_fastGraph->hide();
-  m_wideGraph->show();
+  m_wideGraph->showActiveWaterfall();
   if (m_tci_audio && ui->bandComboBox->currentText()!="OOB")
     Q_EMIT m_config.transceiver_period(m_TRperiod);
   initializeFFT(6912);
@@ -10812,7 +10817,7 @@ void MainWindow::on_actionFST4W_triggered()
   m_bFast9=false;
   m_bFastMode=false;
   m_fastGraph->hide();
-  m_wideGraph->show();
+  m_wideGraph->showActiveWaterfall();
   if (m_tci_audio && ui->bandComboBox->currentText()!="OOB")
     Q_EMIT m_config.transceiver_period(m_TRperiod);
   initializeFFT(6912);
@@ -10866,7 +10871,7 @@ void MainWindow::on_actionFT4_triggered()
   VHF_features_enabled(bVHF);
   ui->cbAutoSeq->setChecked(true);
   m_fastGraph->hide();
-  m_wideGraph->show();
+  m_wideGraph->showActiveWaterfall();
   m_wideGraph->setPeriod(m_TRperiod,m_nsps);
   if (m_tci_audio && ui->bandComboBox->currentText()!="OOB")
     Q_EMIT m_config.transceiver_period(m_TRperiod);
@@ -10936,7 +10941,7 @@ void MainWindow::on_actionFT8_triggered()
   m_TRperiod=15.0;
   ui->sbFtol->setValue (m_settings->value ("Ftol_SF", 50).toInt()); // restore last used Ftol parameter
   m_fastGraph->hide();
-  m_wideGraph->show();
+  m_wideGraph->showActiveWaterfall();
   ui->rh_decodes_headings_label->setText("  UTC   dB   DT Freq    " + tr ("Message"));
   m_wideGraph->setPeriod(m_TRperiod,m_nsps);
   if (m_tci_audio && ui->bandComboBox->currentText()!="OOB")
@@ -11172,7 +11177,7 @@ void MainWindow::on_actionJT9_triggered()
     ui->sbTR->values ({5, 10, 15, 30});
     if(bVHF && m_mode!="JT65" && !blocked) ui->sbTR->setValue (m_settings->value ("TRPeriod", 15).toInt());  // restore last used TRperiod
     on_sbTR_valueChanged (ui->sbTR->value());
-    m_wideGraph->hide();
+    m_wideGraph->hideWaterfalls();
     m_fastGraph->showNormal();
     ui->TxFreqSpinBox->setValue(700);
     ui->RxFreqSpinBox->setValue(700);
@@ -11476,7 +11481,7 @@ void MainWindow::on_actionMSK144_triggered()
   ui->sbFtol->setValue (m_settings->value ("Ftol_MSK144", 50).toInt());   // restore last used parameter
   m_bShMsgs=m_settings->value("ShMsgs_MSK144",false).toBool();
   ui->cbShMsgs->setChecked(m_bShMsgs);
-  m_wideGraph->hide();
+  m_wideGraph->hideWaterfalls();
   m_fastGraph->showNormal();
   ui->TxFreqSpinBox->setValue(1500);
   ui->RxFreqSpinBox->setValue(1500);
@@ -11750,10 +11755,10 @@ void MainWindow::fast_config(bool b)
   ui->TxFreqSpinBox->setEnabled(!b);
   setTrPeriodVisible(b);
   if(b and (m_bFast9 or m_mode=="MSK144")) {
-    m_wideGraph->hide();
+    m_wideGraph->hideWaterfalls();
     m_fastGraph->showNormal();
   } else {
-    m_wideGraph->showNormal();
+    m_wideGraph->showActiveWaterfall();
     m_fastGraph->hide();
   }
 }
