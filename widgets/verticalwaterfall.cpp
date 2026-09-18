@@ -108,11 +108,11 @@ void VerticalWaterfall::closeEvent (QCloseEvent * e)
     QDialog::closeEvent (e);
     return;
   }
-  // Exactly one of Wide/Vertical Waterfall is always active; closing this window
-  // via the title bar would otherwise leave neither one visible and desync the
-  // View menu checkboxes, so route closing through the menu instead (same
-  // convention as the Astronomical data window).
+  // Exactly one of Wide/Vertical Waterfall is always active, so the title-bar
+  // close button switches to the other one instead of leaving neither visible
+  // (which would also desync the View menu checkboxes).
   e->ignore ();
+  Q_EMIT closedByUser ();
 }
 
 void VerticalWaterfall::saveSettings()

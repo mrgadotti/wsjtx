@@ -74,6 +74,7 @@ signals:
   void setXIT2(int n);
   void setFreq3(int rxFreq, int txFreq);
   void jttyDecodeAgainAt2(float secondsAgo);
+  void verticalActiveChanged(bool vertical);   // keeps the View menu checkboxes in sync
 
 public slots:
   void wideFreezeDecode(int n);
