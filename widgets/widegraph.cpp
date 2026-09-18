@@ -5,6 +5,7 @@
 #include <QSettings>
 #include <QDateTime>
 #include <QKeyEvent>
+#include <QCloseEvent>
 #include <math.h>
 #include "ui_widegraph.h"
 #include "commons.h"
@@ -134,30 +135,54 @@ WideGraph::~WideGraph ()
 
 void WideGraph::showVerticalWaterfall()
 {
-  hide();                              // only one of the two waterfalls is active at a time
-  m_vertWaterfall->showNormal();
-  m_vertWaterfall->raise();
-  m_vertWaterfall->activateWindow();
+  m_vertActive = true;
+  showActiveWaterfall();
 }
 
 void WideGraph::showWideWaterfall()
 {
+  m_vertActive = false;
+  showActiveWaterfall();
+}
+
+void WideGraph::showActiveWaterfall()
+{
+  // Only one of the two waterfalls is ever visible at a time; this can be called
+  // repeatedly (e.g. on every mode change) without disturbing which one that is.
+  if (m_vertActive) {
+    hide();
+    if (m_vertWaterfall) {
+      m_vertWaterfall->showNormal();
+      m_vertWaterfall->raise();
+      m_vertWaterfall->activateWindow();
+    }
+  } else {
+    if (m_vertWaterfall) m_vertWaterfall->hide();
+    showNormal();
+    raise();
+    activateWindow();
+  }
+}
+
+void WideGraph::hideWaterfalls()
+{
+  hide();
   if (m_vertWaterfall) m_vertWaterfall->hide();
-  showNormal();
-  raise();
-  activateWindow();
 }
 
 bool WideGraph::vertWaterfallVisible() const
 {
-  return m_vertWaterfall && m_vertWaterfall->isVisible();
+  return m_vertActive;
 }
 
 void WideGraph::closeEvent (QCloseEvent * e)
 {
+  // Exactly one of Wide/Vertical Waterfall is always active; closing this window
+  // via the title bar would otherwise leave neither one visible and desync the
+  // View menu checkboxes, so route closing through the menu instead (same
+  // convention as the Astronomical data window).
   saveSettings ();
-  if(m_vertWaterfall) m_vertWaterfall->close();
-  QDialog::closeEvent (e);
+  e->ignore ();
 }
 
 void WideGraph::saveSettings()                                           //saveSettings

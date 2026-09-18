@@ -230,8 +230,8 @@ private slots:
   void on_actionRecommended_Audio_Settings_triggered();
   void on_actionOnline_User_Guide_triggered();
   void on_actionLocal_User_Guide_triggered();
-  void on_actionWide_Waterfall_triggered();
-  void on_actionVertical_Waterfall_triggered();
+  void on_actionWide_Waterfall_toggled (bool checked);
+  void on_actionVertical_Waterfall_toggled (bool checked);
   void on_actionOpen_triggered();
   void on_actionOpen_next_in_directory_triggered();
   void on_actionDecode_remaining_files_in_directory_triggered();

@@ -5,6 +5,7 @@
 #include <QSettings>
 #include <QDateTime>
 #include <QKeyEvent>
+#include <QCloseEvent>
 #include <math.h>
 #include "ui_verticalwaterfall.h"
 #include "MessageBox.hpp"
@@ -92,8 +93,12 @@ VerticalWaterfall::~VerticalWaterfall ()
 
 void VerticalWaterfall::closeEvent (QCloseEvent * e)
 {
+  // Exactly one of Wide/Vertical Waterfall is always active; closing this window
+  // via the title bar would otherwise leave neither one visible and desync the
+  // View menu checkboxes, so route closing through the menu instead (same
+  // convention as the Astronomical data window).
   saveSettings ();
-  QDialog::closeEvent (e);
+  e->ignore ();
 }
 
 void VerticalWaterfall::saveSettings()

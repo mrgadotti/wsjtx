@@ -4976,11 +4976,20 @@ QPushButton[state=&quot;ok&quot;] {
    </property>
   </action>
   <action name="actionWide_Waterfall">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Waterfall</string>
    </property>
   </action>
   <action name="actionVertical_Waterfall">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Vertical Waterfall</string>
    </property>
