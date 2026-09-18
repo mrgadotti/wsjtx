@@ -11,6 +11,7 @@
 #include "Configuration.hpp"
 #include "MessageBox.hpp"
 #include "SettingsGroup.hpp"
+#include "verticalwaterfall.h"
 #include "moc_widegraph.cpp"
 
 WideGraph::WideGraph(QSettings * settings, QWidget *parent) :
@@ -117,20 +118,42 @@ WideGraph::WideGraph(QSettings * settings, QWidget *parent) :
   ui->paletteComboBox->addItem (m_user_defined);
   if (m_user_defined == m_waterfallPalette) ui->paletteComboBox->setCurrentIndex(index);
   readPalette ();
+
+  // Created hidden, with no parent (so it doesn't stay on top of this
+  // window), so that it receives every state setter below from the start
+  // and is ready to show with the right mode/period/frequencies.
+  m_vertWaterfall.reset(new VerticalWaterfall {m_settings});
+  connect(m_vertWaterfall.data(), &VerticalWaterfall::setFreq3,      this, &WideGraph::setFreq3);
+  connect(m_vertWaterfall.data(), &VerticalWaterfall::freezeDecode2, this, &WideGraph::freezeDecode2);
+  connect(m_vertWaterfall.data(), &VerticalWaterfall::f11f12,        this, &WideGraph::f11f12);
 }
 
 WideGraph::~WideGraph ()
 {
 }
 
+void WideGraph::showVerticalWaterfall()
+{
+  m_vertWaterfall->showNormal();
+  m_vertWaterfall->raise();
+  m_vertWaterfall->activateWindow();
+}
+
+bool WideGraph::vertWaterfallVisible() const
+{
+  return m_vertWaterfall && m_vertWaterfall->isVisible();
+}
+
 void WideGraph::closeEvent (QCloseEvent * e)
 {
   saveSettings ();
+  if(m_vertWaterfall) m_vertWaterfall->close();
   QDialog::closeEvent (e);
 }
 
 void WideGraph::saveSettings()                                           //saveSettings
 {
+  if(m_vertWaterfall) m_vertWaterfall->saveSettings();
   SettingsGroup g {m_settings, "WideGraph"};
   m_settings->setValue ("geometry", saveGeometry ());
   m_settings->setValue ("PlotZero", ui->widePlot->plotZero());
@@ -168,6 +191,10 @@ void WideGraph::drawRed(int ia, int ib)
 
 void WideGraph::dataSink2(float s[], float df3, int ihsym, int ndiskdata, float pdB)  //dataSink2
 {
+  // Forward the raw spectrum (before this window's own averaging) to the
+  // vertical waterfall, which does its own independent averaging/binning.
+  if(m_vertWaterfall->isVisible()) m_vertWaterfall->dataSink2(s, df3, ihsym, ndiskdata);
+
   static float splot[NSMAX];
   int nbpp = ui->widePlot->binsPerPixel();
 
@@ -256,6 +283,7 @@ void WideGraph::setRxFreq(int n)                                           //set
 {
   ui->widePlot->setRxFreq(n);
   if(m_mode!="Q65") ui->widePlot->draw(m_swide,false,false);
+  m_vertWaterfall->setRxFreq(n);
 }
 
 int WideGraph::rxFreq()                                                   //rxFreq
@@ -300,12 +328,14 @@ void WideGraph::setPeriod(double trperiod, int nsps)                  //SetPerio
   m_TRperiod=trperiod;
   m_nsps=nsps;
   ui->widePlot->setNsps(trperiod, nsps);
+  m_vertWaterfall->setPeriod(trperiod, nsps);
 }
 
 void WideGraph::setTxFreq(int n)                                   //setTxFreq
 {
   emit setXIT2(n);
   ui->widePlot->setTxFreq(n);
+  m_vertWaterfall->setTxFreq(n);
 }
 
 void WideGraph::setMode(QString mode)                              //setMode
@@ -318,6 +348,7 @@ void WideGraph::setMode(QString mode)                              //setMode
   ui->widePlot->setMode(mode);
   ui->widePlot->DrawOverlay();
   ui->widePlot->update();
+  m_vertWaterfall->setMode(mode);
 }
 
 void WideGraph::setSubMode(int n)                                  //setSubMode
@@ -326,6 +357,7 @@ void WideGraph::setSubMode(int n)                                  //setSubMode
   ui->widePlot->setSubMode(n);
   ui->widePlot->DrawOverlay();
   ui->widePlot->update();
+  m_vertWaterfall->setSubMode(n);
 }
 
 void WideGraph::on_spec2dComboBox_currentIndexChanged(int index)
@@ -376,6 +408,7 @@ void WideGraph::setFreq2(int rxFreq, int txFreq)                  //setFreq2
 void WideGraph::setDialFreq(double d)                             //setDialFreq
 {
   ui->widePlot->setDialFreq(d);
+  m_vertWaterfall->setDialFreq(d);
 }
 
 void WideGraph::setRxBand (QString const& band)
@@ -393,6 +426,7 @@ void WideGraph::setRxBand (QString const& band)
     }
   ui->widePlot->setRxBand(band);
   setRxRange ();
+  m_vertWaterfall->setRxBand(band);
 }
 
 
@@ -556,11 +590,13 @@ void WideGraph::on_zero2dSlider_valueChanged(int value)               //Zero2
 void WideGraph::setSuperFox(bool b)
 {
   ui->widePlot->setSuperFox(b);
+  m_vertWaterfall->setSuperFox(b);
 }
 
 void WideGraph::setSuperHound(bool b)
 {
   ui->widePlot->setSuperHound(b);
+  m_vertWaterfall->setSuperHound(b);
 }
 
 void WideGraph::setTol(int n)                                         //setTol
@@ -568,16 +604,19 @@ void WideGraph::setTol(int n)                                         //setTol
   ui->widePlot->setTol(n);
   ui->widePlot->DrawOverlay();
   ui->widePlot->update();
+  m_vertWaterfall->setTol(n);
 }
 
 void WideGraph::setFST4_FreqRange(int fLow,int fHigh)
 {
   ui->widePlot->setFST4_FreqRange(fLow,fHigh);
+  m_vertWaterfall->setFST4_FreqRange(fLow,fHigh);
 }
 
 void WideGraph::setSingleDecode(bool b)
 {
   ui->widePlot->setSingleDecode(b);
+  m_vertWaterfall->setSingleDecode(b);
 }
 
 void WideGraph::on_smoSpinBox_valueChanged(int n)
@@ -593,11 +632,13 @@ int WideGraph::smoothYellow()
 void WideGraph::setWSPRtransmitted()
 {
   m_bHaveTransmitted=true;
+  m_vertWaterfall->setWSPRtransmitted();
 }
 
 void WideGraph::setVHF(bool bVHF)
 {
   ui->widePlot->setVHF(bVHF);
+  m_vertWaterfall->setVHF(bVHF);
 }
 
 void WideGraph::on_sbPercent2dPlot_valueChanged(int n)
@@ -614,11 +655,13 @@ void WideGraph::setRedFile(QString fRed)
 void WideGraph::setDiskUTC(int nutc)
 {
   ui->widePlot->setDiskUTC(nutc);
+  m_vertWaterfall->setDiskUTC(nutc);
 }
 
 void WideGraph::setDarkStyle(bool b)
 {
   ui->widePlot->setDarkStyle(b);
+  m_vertWaterfall->setDarkStyle(b);
 }
 
 void WideGraph::restartTotalPower()

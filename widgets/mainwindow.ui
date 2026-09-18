@@ -4724,6 +4724,7 @@ QPushButton[state=&quot;ok&quot;] {
      <string>View</string>
     </property>
     <addaction name="actionWide_Waterfall"/>
+    <addaction name="actionVertical_Waterfall"/>
     <addaction name="actionAstronomical_data"/>
     <addaction name="actionMessage_averaging"/>
     <addaction name="actionEcho_Graph"/>
@@ -4977,6 +4978,11 @@ QPushButton[state=&quot;ok&quot;] {
   <action name="actionWide_Waterfall">
    <property name="text">
     <string>Waterfall</string>
+   </property>
+  </action>
+  <action name="actionVertical_Waterfall">
+   <property name="text">
+    <string>Vertical Waterfall</string>
    </property>
   </action>
   <action name="actionOpen">

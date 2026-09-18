@@ -1478,6 +1478,7 @@ void MainWindow::writeSettings()
   m_settings->setValue("QSYMessageCreatorDisplayed", m_QSYMessageCreatorWidget && m_QSYMessageCreatorWidget->isVisible ());
   m_settings->setValue("ShowQSYMessages", ui->actionEnable_QSY_Popups->isChecked());
   m_settings->setValue("QSYMonitorDisplayed", m_qsymonitorWidget && m_qsymonitorWidget->isVisible ());
+  m_settings->setValue("VerticalWaterfallDisplayed", m_wideGraph->vertWaterfallVisible());
   m_settings->setValue("RespondCQ",ui->respondComboBox->currentIndex());
   m_settings->setValue("HoundSort",ui->comboBoxHoundSort->currentIndex());
   m_settings->setValue("FoxNlist",ui->sbNlist->value());
@@ -1719,6 +1720,7 @@ void MainWindow::readSettings()
   bool displayActiveStations = m_settings->value ("ActiveStationsDisplayed", false).toBool ();
   bool displayQSYMessageCreator = m_settings->value ("QSYMessageCreatorDisplayed", false).toBool ();
   bool displayQSYMonitor = m_settings->value("QSYMonitorDisplayed", false).toBool ();
+  bool displayVerticalWaterfall = m_settings->value ("VerticalWaterfallDisplayed", false).toBool ();
   bool enableQSYpopups = m_settings->value("ShowQSYMessages", true).toBool ();
   ui->respondComboBox->setCurrentIndex(m_settings->value("RespondCQ",0).toInt());
   ui->comboBoxHoundSort->setCurrentIndex(m_settings->value("HoundSort",3).toInt());
@@ -2025,6 +2027,7 @@ void MainWindow::readSettings()
   if (displayActiveStations) on_actionActiveStations_triggered();
   if (displayQSYMessageCreator) on_actionQSYMessage_Creator_triggered();
   if (displayQSYMonitor) on_actionQSY_Monitor_triggered();
+  if (displayVerticalWaterfall) on_actionVertical_Waterfall_triggered();
 
 #ifdef WIN32
   if (m_config.alert_Enabled()) {  // testing and initializing the default audio device for playing audible alerts
@@ -4645,6 +4648,11 @@ void MainWindow::on_actionLocal_User_Guide_triggered()
 void MainWindow::on_actionWide_Waterfall_triggered()      //Display Waterfalls
 {
   m_wideGraph->showNormal();
+}
+
+void MainWindow::on_actionVertical_Waterfall_triggered()  //Display Vertical Waterfall
+{
+  m_wideGraph->showVerticalWaterfall();
 }
 
 void MainWindow::on_actionEcho_Graph_triggered()
