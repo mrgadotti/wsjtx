@@ -649,7 +649,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
 
   connect (m_fastGraph.data (), &FastGraph::fastPick, this, &MainWindow::fastPick);
 
-  connect (this, &MainWindow::finished, m_wideGraph.data (), &WideGraph::close);
+  connect (this, &MainWindow::finished, m_wideGraph.data (), &WideGraph::forceClose);
   connect (this, &MainWindow::finished, m_echoGraph.data (), &EchoGraph::close);
   connect (this, &MainWindow::finished, m_fastGraph.data (), &FastGraph::close);
 

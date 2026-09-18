@@ -170,6 +170,16 @@ void WideGraph::hideWaterfalls()
   if (m_vertWaterfall) m_vertWaterfall->hide();
 }
 
+void WideGraph::forceClose()
+{
+  // Called only from MainWindow's shutdown path (the finished() signal): unlike
+  // an interactive title-bar close, this one must actually go through, or the
+  // window stays on screen and QApplication::quitOnLastWindowClosed never fires.
+  m_shuttingDown = true;
+  if (m_vertWaterfall) m_vertWaterfall->forceClose();
+  close();
+}
+
 bool WideGraph::vertWaterfallVisible() const
 {
   return m_vertActive;
@@ -177,11 +187,15 @@ bool WideGraph::vertWaterfallVisible() const
 
 void WideGraph::closeEvent (QCloseEvent * e)
 {
+  saveSettings ();
+  if (m_shuttingDown) {
+    QDialog::closeEvent (e);
+    return;
+  }
   // Exactly one of Wide/Vertical Waterfall is always active; closing this window
   // via the title bar would otherwise leave neither one visible and desync the
   // View menu checkboxes, so route closing through the menu instead (same
   // convention as the Astronomical data window).
-  saveSettings ();
   e->ignore ();
 }
 
