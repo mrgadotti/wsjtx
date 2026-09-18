@@ -1,0 +1,103 @@
+name: Fork Release
+
+# Fork-friendly release workflow.
+#
+# The upstream release.yml cannot run on a fork: its release job gates on
+# all five platform installers and, on GA tags, force-pushes to WSJTX/wsjtx
+# using a CROSS_REPO_TOKEN secret a fork does not have. This workflow builds
+# only the Linux (x86_64) and Windows installers and publishes them to a
+# Release on this fork, so the .deb / .AppImage / .exe are easy to download.
+#
+# Trigger it from the Actions tab (Fork Release -> Run workflow). The version
+# is read from CMakeLists.txt, matching the same source of truth CI uses.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create (default: fork-v<version>-b<run number>)"
+        required: false
+        type: string
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: v
+        run: |
+          VERSION=$(grep -E '^\s*VERSION\s+[0-9]' CMakeLists.txt | head -1 | awk '{print $2}' | cut -d. -f1-3)
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not derive VERSION from CMakeLists.txt"
+            exit 1
+          fi
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="fork-v${VERSION}-b${GITHUB_RUN_NUMBER}"
+          fi
+          echo "Derived version: $VERSION"
+          echo "Release tag:     $TAG"
+          {
+            echo "version=$VERSION"
+            echo "tag=$TAG"
+          } >> "$GITHUB_OUTPUT"
+
+  linux:
+    needs: prepare
+    uses: ./.github/workflows/build-linux.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      hamlib_branch: "4.7.1"
+      arch: "x86_64"
+    secrets: inherit
+
+  windows:
+    needs: prepare
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      hamlib_branch: "4.7.1"
+    secrets: inherit
+
+  release:
+    needs: [prepare, linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f | sort
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          shopt -s nullglob
+          mapfile -t files < <(find artifacts -maxdepth 2 -type f \
+            \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.exe" \) | sort)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::No release assets found under artifacts/"
+            find artifacts -type f | sort
+            exit 1
+          fi
+          printf 'Publishing %d asset(s):\n' "${#files[@]}"
+          printf '  %s\n' "${files[@]}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${files[@]}" --clobber
+          else
+            gh release create "$TAG" \
+              --title "WSJT-X ${VERSION} (fork build)" \
+              --generate-notes \
+              --prerelease \
+              "${files[@]}"
+          fi
