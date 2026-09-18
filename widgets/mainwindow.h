@@ -796,6 +796,9 @@ private:
   QLabel ndecodes_label;
   QProgressBar progressBar;
   QLabel watchdog_label;
+  QLabel qso_count_label;         // total QSOs logged, and QSOs logged on the current band
+  QHash<QString, int> m_qsoCountByBand;
+  int m_qsoCountTotal = 0;
 
   QFuture<void> m_wav_future;
   QFutureWatcher<void> m_wav_future_watcher;
@@ -984,6 +987,8 @@ private:
   void setDecodedTextFont (QFont const&);
   void writeSettings();
   void createStatusBar();
+  void loadQSOCounts();
+  void updateQSOCountLabel();
   void updateStatusBar();
   void genStdMsgs(QString rpt, bool unconditional = false);
   void genCQMsg();

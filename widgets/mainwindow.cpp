@@ -4404,6 +4404,39 @@ void MainWindow::createStatusBar()                           //createStatusBar
 
   statusBar ()->addPermanentWidget (&watchdog_label);
   update_watchdog_label ();
+
+  qso_count_label.setAlignment (Qt::AlignHCenter);
+  qso_count_label.setMinimumSize (QSize {130, 18});
+  qso_count_label.setFrameStyle (QFrame::Panel | QFrame::Sunken);
+  statusBar()->addWidget (&qso_count_label);
+  loadQSOCounts ();
+  updateQSOCountLabel ();
+}
+
+void MainWindow::loadQSOCounts ()
+{
+  // Seed the counters from the existing ADIF log so the totals survive a restart.
+  m_qsoCountByBand.clear ();
+  m_qsoCountTotal = 0;
+  QFile f {m_config.writeable_data_dir ().absoluteFilePath ("wsjtx_log.adi")};
+  if (!f.open (QFile::ReadOnly | QFile::Text)) return;
+  QString const contents {f.readAll ()};
+  QRegularExpression const band_tag {R"(<band:\d+>([^<\s]*))", QRegularExpression::CaseInsensitiveOption};
+  auto it = band_tag.globalMatch (contents);
+  while (it.hasNext ())
+    {
+      auto const match = it.next ();
+      ++m_qsoCountTotal;
+      ++m_qsoCountByBand[match.captured (1).toUpper ()];
+    }
+}
+
+void MainWindow::updateQSOCountLabel ()
+{
+  qso_count_label.setText (QString {"QSO: %1  %2: %3"}
+                            .arg (m_qsoCountTotal)
+                            .arg (m_currentBand)
+                            .arg (m_qsoCountByBand.value (m_currentBand.toUpper (), 0)));
 }
 
 void MainWindow::setup_status_bar (bool vhf)
@@ -8327,7 +8360,13 @@ void MainWindow::guiUpdate()
     }
 
     if(m_mode=="FST4") chk_FST4_freq_range();
-    m_currentBand=m_config.bands()->find(m_freqNominal);
+    {
+      auto const band = m_config.bands()->find(m_freqNominal);
+      if (m_currentBand != band) {
+        m_currentBand = band;
+        updateQSOCountLabel ();
+      }
+    }
     if( SpecOp::HOUND == m_specOp ) {
       qint32 tHound=QDateTime::currentMSecsSinceEpoch()/1000 - m_tAutoOn;
       //To keep calling Fox, Hound must reactivate Enable Tx at least once every 2 minutes
@@ -10639,10 +10678,17 @@ void MainWindow::acceptQSO (QDateTime const& QSO_date_off, QString const& call, 
 {
   QString date = QSO_date_on.toString("yyyyMMdd");
   m_lastloggedcall=call; //ft8md
-  if (!m_logBook.add (call, grid, m_config.bands()->find(dial_freq), mode, ADIF))
+  auto const qsoBand = m_config.bands()->find(dial_freq);
+  if (!m_logBook.add (call, grid, qsoBand, mode, ADIF))
     {
       MessageBox::warning_message (this, tr ("Log file error"),
                                    tr ("Cannot open \"%1\"").arg (m_logBook.path ()));
+    }
+  else
+    {
+      ++m_qsoCountTotal;
+      ++m_qsoCountByBand[qsoBand.toUpper ()];
+      updateQSOCountLabel ();
     }
 
   m_messageClient->qso_logged (QSO_date_off, call, grid, dial_freq, mode, rpt_sent, rpt_received
