@@ -91,27 +91,13 @@ VerticalWaterfall::~VerticalWaterfall ()
 {
 }
 
-void VerticalWaterfall::forceClose()
-{
-  // Called only from WideGraph::forceClose(), itself only reached from
-  // MainWindow's shutdown path: unlike an interactive title-bar close, this one
-  // must actually go through, or the window stays on screen and
-  // QApplication::quitOnLastWindowClosed never fires.
-  m_shuttingDown = true;
-  close();
-}
-
 void VerticalWaterfall::closeEvent (QCloseEvent * e)
 {
+  // Closing this window via its title bar just closes it; it is not reopened
+  // automatically and does not affect the Wide Graph. Reopening is done from
+  // the View menu.
   saveSettings ();
-  if (m_shuttingDown) {
-    QDialog::closeEvent (e);
-    return;
-  }
-  // Exactly one of Wide/Vertical Waterfall is always active, so the title-bar
-  // close button switches to the other one instead of leaving neither visible
-  // (which would also desync the View menu checkboxes).
-  e->ignore ();
+  QDialog::closeEvent (e);
   Q_EMIT closedByUser ();
 }
 

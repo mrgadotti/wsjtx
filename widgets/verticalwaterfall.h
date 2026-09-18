@@ -45,13 +45,12 @@ public:
   void   setDarkStyle(bool b);
   void   setDialFreq(double d);
   void   saveSettings();
-  void   forceClose();            // actually close (app shutdown), unlike closeEvent's normal ignore()
 
 signals:
   void freezeDecode2(int n);
   void f11f12(int n);
   void setFreq3(int rxFreq, int txFreq);
-  void closedByUser();   // title-bar close while not shutting down: ask WideGraph to switch views
+  void closedByUser();   // this window was closed via its title bar
 
 public slots:
   void wideFreezeDecode(int n);
@@ -97,7 +96,6 @@ private:
   bool	 m_freq;
   bool   m_bFlatten;
   bool   m_bHaveTransmitted;    //Set true at end of a WSPR or FT4 transmission
-  bool   m_shuttingDown = false; // true only while the application itself is exiting
 
   QString m_rxBand;
   QString m_mode;
