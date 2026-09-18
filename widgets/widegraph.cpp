@@ -127,6 +127,7 @@ WideGraph::WideGraph(QSettings * settings, QWidget *parent) :
   connect(m_vertWaterfall.data(), &VerticalWaterfall::setFreq3,      this, &WideGraph::setFreq3);
   connect(m_vertWaterfall.data(), &VerticalWaterfall::freezeDecode2, this, &WideGraph::freezeDecode2);
   connect(m_vertWaterfall.data(), &VerticalWaterfall::f11f12,        this, &WideGraph::f11f12);
+  connect(m_vertWaterfall.data(), &VerticalWaterfall::closedByUser,  this, &WideGraph::showWideWaterfall);
 }
 
 WideGraph::~WideGraph ()
@@ -137,12 +138,14 @@ void WideGraph::showVerticalWaterfall()
 {
   m_vertActive = true;
   showActiveWaterfall();
+  Q_EMIT verticalActiveChanged (true);
 }
 
 void WideGraph::showWideWaterfall()
 {
   m_vertActive = false;
   showActiveWaterfall();
+  Q_EMIT verticalActiveChanged (false);
 }
 
 void WideGraph::showActiveWaterfall()
@@ -192,11 +195,11 @@ void WideGraph::closeEvent (QCloseEvent * e)
     QDialog::closeEvent (e);
     return;
   }
-  // Exactly one of Wide/Vertical Waterfall is always active; closing this window
-  // via the title bar would otherwise leave neither one visible and desync the
-  // View menu checkboxes, so route closing through the menu instead (same
-  // convention as the Astronomical data window).
+  // Exactly one of Wide/Vertical Waterfall is always active, so the title-bar
+  // close button switches to the other one instead of leaving neither visible
+  // (which would also desync the View menu checkboxes).
   e->ignore ();
+  showVerticalWaterfall ();
 }
 
 void WideGraph::saveSettings()                                           //saveSettings

@@ -564,6 +564,13 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   waterfallOrientationGroup->setExclusive (true);
   waterfallOrientationGroup->addAction (ui->actionWide_Waterfall);
   waterfallOrientationGroup->addAction (ui->actionVertical_Waterfall);
+  // WideGraph can also switch orientation on its own (e.g. the title-bar close
+  // button on the active waterfall switches to the other one); keep the View
+  // menu checkboxes in sync with whichever one that leaves active.
+  connect (m_wideGraph.data (), &WideGraph::verticalActiveChanged, this, [this] (bool vertical) {
+    ui->actionVertical_Waterfall->setChecked (vertical);
+    ui->actionWide_Waterfall->setChecked (!vertical);
+  });
 
   setUnifiedTitleAndToolBarOnMac (true);
   createStatusBar();

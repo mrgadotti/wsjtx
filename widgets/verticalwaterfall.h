@@ -51,6 +51,7 @@ signals:
   void freezeDecode2(int n);
   void f11f12(int n);
   void setFreq3(int rxFreq, int txFreq);
+  void closedByUser();   // title-bar close while not shutting down: ask WideGraph to switch views
 
 public slots:
   void wideFreezeDecode(int n);

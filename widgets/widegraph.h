@@ -70,6 +70,7 @@ signals:
   void f11f12(int n);
   void setXIT2(int n);
   void setFreq3(int rxFreq, int txFreq);
+  void verticalActiveChanged(bool vertical);   // keeps the View menu checkboxes in sync
 
 public slots:
   void wideFreezeDecode(int n);
