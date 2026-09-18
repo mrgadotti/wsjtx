@@ -45,6 +45,7 @@ public:
   void   setDarkStyle(bool b);
   void   setDialFreq(double d);
   void   saveSettings();
+  void   forceClose();            // actually close (app shutdown), unlike closeEvent's normal ignore()
 
 signals:
   void freezeDecode2(int n);
@@ -95,6 +96,7 @@ private:
   bool	 m_freq;
   bool   m_bFlatten;
   bool   m_bHaveTransmitted;    //Set true at end of a WSPR or FT4 transmission
+  bool   m_shuttingDown = false; // true only while the application itself is exiting
 
   QString m_rxBand;
   QString m_mode;
