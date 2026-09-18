@@ -558,18 +558,20 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
 {
   ui->setupUi(this);
 
-  // Wide Waterfall and Vertical Waterfall are two views of the same data; exactly
-  // one is ever shown, so present them in the View menu as a radio-button pair.
+  // Wide Waterfall and Vertical Waterfall are two views of the same data;
+  // selecting one from the View menu closes the other, so present them as a
+  // radio-button pair. Closing either one via its own title bar, though, just
+  // closes that one (no auto-reopening of the other) -- uncheck its menu item
+  // to match, so the menu doesn't claim it's still showing.
   auto waterfallOrientationGroup = new QActionGroup (this);
   waterfallOrientationGroup->setExclusive (true);
   waterfallOrientationGroup->addAction (ui->actionWide_Waterfall);
   waterfallOrientationGroup->addAction (ui->actionVertical_Waterfall);
-  // WideGraph can also switch orientation on its own (e.g. the title-bar close
-  // button on the active waterfall switches to the other one); keep the View
-  // menu checkboxes in sync with whichever one that leaves active.
-  connect (m_wideGraph.data (), &WideGraph::verticalActiveChanged, this, [this] (bool vertical) {
-    ui->actionVertical_Waterfall->setChecked (vertical);
-    ui->actionWide_Waterfall->setChecked (!vertical);
+  connect (m_wideGraph.data (), &WideGraph::wideClosedByUser, this, [this] {
+    ui->actionWide_Waterfall->setChecked (false);
+  });
+  connect (m_wideGraph.data (), &WideGraph::verticalClosedByUser, this, [this] {
+    ui->actionVertical_Waterfall->setChecked (false);
   });
 
   setUnifiedTitleAndToolBarOnMac (true);
@@ -656,7 +658,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
 
   connect (m_fastGraph.data (), &FastGraph::fastPick, this, &MainWindow::fastPick);
 
-  connect (this, &MainWindow::finished, m_wideGraph.data (), &WideGraph::forceClose);
+  connect (this, &MainWindow::finished, m_wideGraph.data (), &WideGraph::closeAll);
   connect (this, &MainWindow::finished, m_echoGraph.data (), &EchoGraph::close);
   connect (this, &MainWindow::finished, m_fastGraph.data (), &FastGraph::close);
 

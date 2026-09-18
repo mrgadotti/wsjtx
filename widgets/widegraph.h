@@ -32,7 +32,7 @@ public:
   void   showWideWaterfall();
   void   showActiveWaterfall();   // (re)show whichever orientation is preferred, hide the other
   void   hideWaterfalls();        // hide both, e.g. while the Fast Graph is active
-  void   forceClose();            // actually close (app shutdown), unlike closeEvent's normal ignore()
+  void   closeAll();              // called only when the application itself is exiting
   bool   vertWaterfallVisible() const;
   void   setRxFreq(int n);
   int    rxFreq();
@@ -70,7 +70,8 @@ signals:
   void f11f12(int n);
   void setXIT2(int n);
   void setFreq3(int rxFreq, int txFreq);
-  void verticalActiveChanged(bool vertical);   // keeps the View menu checkboxes in sync
+  void wideClosedByUser();       // this window was closed via its title bar
+  void verticalClosedByUser();   // the vertical waterfall was closed via its title bar
 
 public slots:
   void wideFreezeDecode(int n);
@@ -110,7 +111,6 @@ private:
   QScopedPointer<Ui::WideGraph> ui;
   QScopedPointer<VerticalWaterfall> m_vertWaterfall;
   bool m_vertActive = false;   // persists which orientation is the user's preference
-  bool m_shuttingDown = false; // true only while the application itself is exiting
 
   QSettings * m_settings;
   QDir m_palettes_path;
