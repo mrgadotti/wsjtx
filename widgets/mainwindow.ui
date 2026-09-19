@@ -4983,7 +4983,7 @@ QPushButton[state=&quot;ok&quot;] {
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Waterfall</string>
+    <string>Horizontal Waterfall</string>
    </property>
   </action>
   <action name="actionVertical_Waterfall">

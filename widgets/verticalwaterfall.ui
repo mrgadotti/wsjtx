@@ -58,7 +58,7 @@
      <widget class="QCheckBox" name="cbControls">
       <property name="geometry">
        <rect>
-        <x>2</x>
+        <x>62</x>
         <y>1</y>
         <width>18</width>
         <height>17</height>

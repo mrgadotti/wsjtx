@@ -24,7 +24,7 @@ VerticalWaterfall::VerticalWaterfall(QSettings * settings, QWidget *parent) :
 {
   ui->setupUi(this);
 
-  setWindowTitle (QApplication::applicationName () + " - " + tr ("Vertical Waterfall"));
+  setWindowTitle (QApplication::applicationName () + " - " + tr ("Waterfall"));
   setWindowFlags (Qt::WindowCloseButtonHint | Qt::WindowMinimizeButtonHint);
   setMaximumHeight (MAX_VERT_BINS);
 
