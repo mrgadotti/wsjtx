@@ -1,4 +1,5 @@
 #include "displaytext.h"
+#include "DriftingDateTime.hpp"
 
 #include <vector>
 #include <algorithm>
@@ -712,13 +713,13 @@ void DisplayText::displayTransmittedText(QString text, QString modeTx, qint32 tx
     QString t;
     if(bFastMode or modeTx=="FT8" or modeTx=="FT4" or (TRperiod<60) or
        (modeTx=="Q65" and TRperiod==60)) {
-      t = QDateTime::currentDateTimeUtc().toString("hhmmss") + \
+      t = DriftingDateTime::currentDateTimeUtc().toString("hhmmss") + \
         "  Tx      " + t2 + t1 + text;
     } else if(modeTx.mid(0,6)=="FT8fox") {
-      t = QDateTime::currentDateTimeUtc().toString("hhmmss") + \
+      t = DriftingDateTime::currentDateTimeUtc().toString("hhmmss") + \
         " Tx" + modeTx.mid(7) + " " + text;
     } else {
-      t = QDateTime::currentDateTimeUtc().toString("hhmm") + \
+      t = DriftingDateTime::currentDateTimeUtc().toString("hhmm") + \
         "  Tx      " + t2 + t1 + text;
     }
     QColor bg;
@@ -741,7 +742,7 @@ void DisplayText::displayTransmittedText(QString text, QString modeTx, qint32 tx
 
 void DisplayText::displayQSY(QString text)
 {
-  QString t = QDateTime::currentDateTimeUtc().toString("hhmmss") + "            " + text;
+  QString t = DriftingDateTime::currentDateTimeUtc().toString("hhmmss") + "            " + text;
   insertText (t, "hotpink");
 }
 

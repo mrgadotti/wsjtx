@@ -1,4 +1,5 @@
 #include "widegraph.h"
+#include "DriftingDateTime.hpp"
 
 #include <algorithm>
 #include <QApplication>
@@ -276,7 +277,7 @@ void WideGraph::dataSink2(float s[], float df3, int ihsym, int ndiskdata, float 
     }
 
 // Time according to this computer
-    qint64 ms = QDateTime::currentMSecsSinceEpoch() % 86400000;
+    qint64 ms = DriftingDateTime::currentMSecsSinceEpoch() % 86400000;
     double tr = fmod(0.001*ms,m_TRperiod);
     if((ndiskdata && ihsym <= m_waterfallAvg) || (!ndiskdata && (tr<m_tr0))) {
       float flagValue=1.0e30;

@@ -1,4 +1,5 @@
 #include "WSPRBandHopping.hpp"
+#include "DriftingDateTime.hpp"
 
 #include <random>
 
@@ -335,7 +336,7 @@ void WSPRBandHopping::set_tx_percent (int new_value)
 // determine the parameters of the hop, if any
 auto WSPRBandHopping::next_hop (bool tx_enabled) -> Hop
 {
-  auto const& now = QDateTime::currentDateTimeUtc ();
+  auto const& now = DriftingDateTime::currentDateTimeUtc ();
   auto const& date = now.date ();
   auto year = date.year ();
   auto month = date.month ();

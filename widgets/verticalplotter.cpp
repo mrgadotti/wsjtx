@@ -1,4 +1,5 @@
 #include "verticalplotter.h"
+#include "DriftingDateTime.hpp"
 #include <math.h>
 #include <cstring>
 #include <QPainter>
@@ -175,7 +176,7 @@ void CVerticalPlotter::draw(float swide[], bool bScroll)
     painter1.setPen(Qt::white);
     QString t;
     if(m_nUTC<0) {
-      auto start = qt_truncate_date_time_to (QDateTime::currentDateTimeUtc(), m_TRperiod * 1e3)
+      auto start = qt_truncate_date_time_to (DriftingDateTime::currentDateTimeUtc(), m_TRperiod * 1e3)
         .toString (m_TRperiod < 60. ? "hh:mm:ss" : "hh:mm");
       t = QString {"%1    %2"}.arg (start, m_rxBand);
     } else {

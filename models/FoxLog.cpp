@@ -1,4 +1,5 @@
 #include "FoxLog.hpp"
+#include "DriftingDateTime.hpp"
 
 #include <stdexcept>
 #include <utility>
@@ -255,7 +256,7 @@ void FoxLog::reset ()
 int FoxLog::rate_60m()
 {
   int rate60m = 0;
-  qlonglong const& one_hour_ago = QDateTime::currentDateTime().addSecs(-3600).toMSecsSinceEpoch () / 1000;
+  qlonglong const& one_hour_ago = DriftingDateTime::currentDateTime().addSecs(-3600).toMSecsSinceEpoch () / 1000;
 
   // query the 60m rate
   m_->rate60m_query_.bindValue (":one_hour_ago", one_hour_ago);
@@ -270,7 +271,7 @@ double FoxLog::rate_last_n(int n)
 {
   double rate_interval = 0;
 
-  qlonglong const& secs_now = QDateTime::currentDateTime().toMSecsSinceEpoch () / 1000;
+  qlonglong const& secs_now = DriftingDateTime::currentDateTime().toMSecsSinceEpoch () / 1000;
 
   // get last n or up to n
   m_->rate_n_query_.bindValue (":limitn", n);

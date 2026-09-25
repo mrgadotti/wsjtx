@@ -3,6 +3,7 @@
 #include <QCloseEvent>
 #include <QDateTime>
 #include "SettingsGroup.hpp"
+#include "DriftingDateTime.hpp"
 #include "Configuration.hpp"
 #include "QSYMessage.h"
 #include "ui_QSYMessage.h"
@@ -16,7 +17,7 @@ QSYMessage::QSYMessage(const QString& message,const QString& theCall, QSettings 
 {
   ui->setupUi(this);
   read_settings();
-  setWindowTitle ("Message" + QDateTime::currentDateTimeUtc().toString(" [hh:mm:ss]"));
+  setWindowTitle ("Message" + DriftingDateTime::currentDateTimeUtc().toString(" [hh:mm:ss]"));
   ui->label->setStyleSheet("font: bold; font-size: 30pt");
   getBandModeFreq();
 }

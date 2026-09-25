@@ -210,6 +210,8 @@
 #include "logbook/logbook.h"
 #include "widgets/LazyFillComboBox.hpp"
 #include "Network/FileDownload.hpp"
+#include "Network/Ntp.hpp"
+#include "DriftingDateTime.hpp"
 
 #include "ui_Configuration.h"
 #include "moc_Configuration.cpp"
@@ -701,6 +703,12 @@ private:
   void read_voices ();
   void read_voicesPath ();
 
+  Q_SLOT void on_ntp_sync_now_push_button_clicked ();
+  void handle_ntp_offset (double offsetSeconds, double roundTripSeconds);
+  void handle_ntp_error (QString const& message);
+  void start_ntp_sync (QString const& host);
+  void restart_ntp_timer ();
+
   // typenames used as arguments must match registered type names :(
   Q_SIGNAL void start_transceiver (unsigned seqeunce_number) const;
   Q_SIGNAL void set_transceiver (Transceiver::TransceiverState const&,
@@ -714,6 +722,11 @@ private:
   QList<QMetaObject::Connection> rig_connections_;
 
   QScopedPointer<Ui::configuration_dialog> ui_;
+
+  Ntp * ntp_client_;
+  QTimer * ntp_sync_timer_;
+  QString ntp_server_;
+  int ntp_sync_interval_min_;   // 0 = manual only, else 5/30/60
 
   QNetworkAccessManager * network_manager_;
   QSettings * settings_;
@@ -1763,6 +1776,9 @@ Configuration::impl::impl (Configuration * self, QNetworkAccessManager * network
   , self_ {self}
   , transceiver_thread_ {nullptr}
   , ui_ {new Ui::configuration_dialog}
+  , ntp_client_ {new Ntp {this}}
+  , ntp_sync_timer_ {new QTimer {this}}
+  , ntp_sync_interval_min_ {30}
   , network_manager_ {network_manager}
   , settings_ {settings}
   , logbook_ {logbook}
@@ -1858,6 +1874,15 @@ Configuration::impl::impl (Configuration * self, QNetworkAccessManager * network
 
   // this must be done after the default paths above are set
   read_settings ();
+
+  connect (ntp_client_, &Ntp::offsetComputed, this, &Configuration::impl::handle_ntp_offset);
+  connect (ntp_client_, &Ntp::error, this, &Configuration::impl::handle_ntp_error);
+  connect (ntp_sync_timer_, &QTimer::timeout, [this] {start_ntp_sync (ntp_server_);});
+  restart_ntp_timer ();
+  if (ntp_sync_interval_min_ > 0)
+    {
+      QTimer::singleShot (2000, this, [this] {start_ntp_sync (ntp_server_);});
+    }
 
   // set up dynamic loading of audio devices
   connect (ui_->sound_input_combo_box, &LazyFillComboBox::about_to_show_popup, [this] () {
@@ -2106,6 +2131,14 @@ Configuration::impl::~impl ()
 
 void Configuration::impl::initialize_models ()
 {
+  ui_->ntp_server_line_edit->setText (ntp_server_);
+  {
+    int idx = 0;
+    if (ntp_sync_interval_min_ == 5) idx = 1;
+    else if (ntp_sync_interval_min_ == 30) idx = 2;
+    else if (ntp_sync_interval_min_ == 60) idx = 3;
+    ui_->ntp_sync_interval_combo_box->setCurrentIndex (idx);
+  }
   next_audio_input_device_ = audio_input_device_;
   next_audio_input_channel_ = audio_input_channel_;
   next_audio_output_device_ = audio_output_device_;
@@ -2347,6 +2380,14 @@ void Configuration::impl::read_settings ()
   restoreGeometry (settings_->value ("window/geometry").toByteArray ());
 
   my_callsign_ = settings_->value ("MyCall", QString {}).toString ();
+  ntp_server_ = settings_->value ("NTPServer", "pool.ntp.org").toString ().trimmed ();
+  if (ntp_server_.isEmpty ()) ntp_server_ = "pool.ntp.org";
+  ntp_sync_interval_min_ = settings_->value ("NTPSyncIntervalMinutes", 30).toInt ();
+  if (ntp_sync_interval_min_ != 0 && ntp_sync_interval_min_ != 5
+      && ntp_sync_interval_min_ != 30 && ntp_sync_interval_min_ != 60)
+    {
+      ntp_sync_interval_min_ = 30;
+    }
   my_grid_ = settings_->value ("MyGrid", QString {}).toString ();
   FD_exchange_ = settings_->value ("Field_Day_Exchange",QString {}).toString ();
   RTTY_exchange_ = settings_->value ("RTTY_Exchange",QString {}).toString ();
@@ -2753,6 +2794,8 @@ void Configuration::impl::write_settings ()
   SettingsGroup g {settings_, "Configuration"};
 
   settings_->setValue ("MyCall", my_callsign_);
+  settings_->setValue ("NTPServer", ntp_server_);
+  settings_->setValue ("NTPSyncIntervalMinutes", ntp_sync_interval_min_);
   settings_->setValue ("MyGrid", my_grid_);
   settings_->setValue ("Field_Day_Exchange", FD_exchange_);
   settings_->setValue ("RTTY_Exchange", RTTY_exchange_);
@@ -3278,6 +3321,50 @@ TransceiverFactory::ParameterPack Configuration::impl::gather_rig_data ()
   return result;
 }
 
+void Configuration::impl::start_ntp_sync (QString const& host)
+{
+  if (host.isEmpty () || ntp_client_->isBusy ())
+    {
+      return;
+    }
+  ui_->ntp_status_label->setText (tr ("Synchronizing with %1 ...").arg (host));
+  ui_->ntp_sync_now_push_button->setEnabled (false);
+  ntp_client_->query (host);
+}
+
+void Configuration::impl::restart_ntp_timer ()
+{
+  ntp_sync_timer_->stop ();
+  if (ntp_sync_interval_min_ > 0)
+    {
+      ntp_sync_timer_->start (ntp_sync_interval_min_ * 60 * 1000);
+    }
+}
+
+void Configuration::impl::on_ntp_sync_now_push_button_clicked ()
+{
+  start_ntp_sync (ui_->ntp_server_line_edit->text ().trimmed ());
+}
+
+void Configuration::impl::handle_ntp_offset (double offsetSeconds, double roundTripSeconds)
+{
+  ui_->ntp_sync_now_push_button->setEnabled (true);
+  DriftingDateTime::setOffsetMSecs (qRound64 (offsetSeconds * 1000.));
+  LOG_INFO (QString {"NTP sync: clock offset %1 s, round trip %2 s"}
+            .arg (offsetSeconds, 0, 'f', 3).arg (roundTripSeconds, 0, 'f', 3));
+  ui_->ntp_status_label->setText (tr ("Synced at %1 UTC: clock offset %2 s, round trip %3 s")
+                                  .arg (DriftingDateTime::currentDateTimeUtc ().toString ("hh:mm:ss"))
+                                  .arg (offsetSeconds, 0, 'f', 3)
+                                  .arg (roundTripSeconds, 0, 'f', 3));
+}
+
+void Configuration::impl::handle_ntp_error (QString const& message)
+{
+  ui_->ntp_sync_now_push_button->setEnabled (true);
+  LOG_WARN (message);
+  ui_->ntp_status_label->setText (message);
+}
+
 void Configuration::impl::accept ()
 {
   // Called when OK button is clicked.
@@ -3387,6 +3474,17 @@ void Configuration::impl::accept ()
   //           << "reset o/p:" << restart_sound_output_device_;
 
   my_callsign_ = ui_->callsign_line_edit->text ();
+  ntp_server_ = ui_->ntp_server_line_edit->text ().trimmed ();
+  if (ntp_server_.isEmpty ()) ntp_server_ = "pool.ntp.org";
+  {
+    static int const ntp_intervals[] = {0, 5, 30, 60};
+    int const new_interval = ntp_intervals[qBound (0, ui_->ntp_sync_interval_combo_box->currentIndex (), 3)];
+    if (new_interval != ntp_sync_interval_min_)
+      {
+        ntp_sync_interval_min_ = new_interval;
+        restart_ntp_timer ();
+      }
+  }
   my_grid_ = ui_->grid_line_edit->text ();
   FD_exchange_= ui_->Field_Day_Exchange->text ().toUpper ();
   RTTY_exchange_= ui_->RTTY_Exchange->text ().toUpper ();

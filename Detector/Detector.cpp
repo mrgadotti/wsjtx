@@ -1,4 +1,5 @@
 #include "Detector.hpp"
+#include "DriftingDateTime.hpp"
 #include <QDateTime>
 #include <QtAlgorithms>
 #include <QDebug>
@@ -44,7 +45,7 @@ bool Detector::reset ()
 void Detector::clear ()
 {
   // set index to roughly where we are in time (1ms resolution)
-  // qint64 now (QDateTime::currentMSecsSinceEpoch ());
+  // qint64 now (DriftingDateTime::currentMSecsSinceEpoch ());
   // unsigned msInPeriod ((now % 86400000LL) % (m_period * 1000));
   // dec_data.params.kin = qMin ((msInPeriod * m_frameRate) / 1000, static_cast<unsigned> (sizeof (dec_data.d2) / sizeof (dec_data.d2[0])));
   dec_data.params.kin = 0;
@@ -57,7 +58,7 @@ void Detector::clear ()
 qint64 Detector::writeData (char const * data, qint64 maxSize)
 {
   static unsigned mstr0=999999;
-  qint64 ms0 = QDateTime::currentMSecsSinceEpoch() % 86400000;
+  qint64 ms0 = DriftingDateTime::currentMSecsSinceEpoch() % 86400000;
   unsigned mstr = ms0 % int(1000.0*m_period); // ms into the nominal Tx start time
   if(mstr < mstr0) {              //When mstr has wrapped around to 0, restart the buffer
     dec_data.params.kin = 0;

@@ -1,5 +1,6 @@
 
 #include "otpgenerator.h"
+#include "DriftingDateTime.hpp"
 
 #include <QMessageAuthenticationCode>
 #include <QtEndian>
@@ -68,7 +69,7 @@ QString OTPGenerator::generateHOTP(const QString &secret, quint64 counter, int l
 
 QByteArray OTPGenerator::generateTOTP(const QByteArray &rawSecret, int length)
 {
-  const qint64 counter = QDateTime::currentDateTime().toMSecsSinceEpoch() / 30000;
+  const qint64 counter = DriftingDateTime::currentDateTime().toMSecsSinceEpoch() / 30000;
   return generateHOTP(rawSecret, counter, length);
 }
 

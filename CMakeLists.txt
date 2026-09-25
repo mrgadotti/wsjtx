@@ -300,6 +300,7 @@ set (wsjt_qt_CXXSRCS
   widgets/CheckableItemComboBox.cpp
   widgets/BandComboBox.cpp
   otpgenerator.cpp
+  DriftingDateTime.cpp
   )
 
 set (wsjt_qtmm_CXXSRCS
@@ -343,6 +344,7 @@ set (wsjtx_CXXSRCS
   WSPR/WsprTxScheduler.cpp
   widgets/mainwindow.cpp
   Configuration.cpp
+  Network/Ntp.cpp
   main.cpp
   Network/wsprnet.cpp
   WSPR/WSPRBandHopping.cpp

@@ -3,6 +3,7 @@
 // by Edson Pereira - PY2SDR
 
 #include "wsprnet.h"
+#include "DriftingDateTime.hpp"
 
 #include <cmath>
 
@@ -153,7 +154,7 @@ void WSPRNet::post (QString const& call, QString const& grid, QString const& rfr
               query.addQueryItem ("function", "wspr");
               // use time as at 3/4 of T/R period before current to
               // ensure date is in Rx period
-              auto const& date = QDateTime::currentDateTimeUtc ().addSecs (-TR_period * 3. / 4.).date ();
+              auto const& date = DriftingDateTime::currentDateTimeUtc ().addSecs (-TR_period * 3. / 4.).date ();
               query.addQueryItem ("date", date.toString ("yyMMdd"));
               query.addQueryItem ("time", match.captured ("time"));
               query.addQueryItem ("sig", match.captured ("db"));

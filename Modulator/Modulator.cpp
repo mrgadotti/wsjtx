@@ -1,4 +1,5 @@
 #include "Modulator.hpp"
+#include "DriftingDateTime.hpp"
 #include <limits>
 #include <qmath.h>
 #include <QDateTime>
@@ -54,7 +55,7 @@ void Modulator::start (QString mode, unsigned symbolsLength, double framesPerSym
   // qDebug () << "mode:" << mode << "symbolsLength:" << symbolsLength << "framesPerSymbol:" << framesPerSymbol << "frequency:" << frequency << "toneSpacing:" << toneSpacing << "channel:" << channel << "synchronize:" << synchronize << "fastMode:" << fastMode << "dBSNR:" << dBSNR << "TRperiod:" << TRperiod;
   Q_ASSERT (stream);
 // Time according to this computer which becomes our base time
-  qint64 ms0 = QDateTime::currentMSecsSinceEpoch() % 86400000;
+  qint64 ms0 = DriftingDateTime::currentMSecsSinceEpoch() % 86400000;
   unsigned mstr = ms0 % int(1000.0*m_period); // ms into the nominal Tx start time
 
   if(m_state != Idle) stop();
@@ -172,7 +173,7 @@ qint64 Modulator::readData (char * data, qint64 maxSize)
   qint16 * end (samples + numFrames * (bytesPerFrame () / sizeof (qint16)));
   qint64 framesGenerated (0);
 
-//  if(m_ic==0) qDebug() << "aa" << 0.001*(QDateTime::currentMSecsSinceEpoch() % qint64(1000*m_TRperiod))
+//  if(m_ic==0) qDebug() << "aa" << 0.001*(DriftingDateTime::currentMSecsSinceEpoch() % qint64(1000*m_TRperiod))
 //                       << m_state << m_TRperiod << m_silentFrames << m_ic << foxcom_.wave[m_ic];
 
   switch (m_state)
@@ -205,7 +206,7 @@ qint64 Modulator::readData (char * data, qint64 maxSize)
         if(m_TRperiod==3.0) slowCwId=false;
         bool fastCwId=false;
         static bool bCwId=false;
-        qint64 ms = QDateTime::currentMSecsSinceEpoch();
+        qint64 ms = DriftingDateTime::currentMSecsSinceEpoch();
         float tsec=0.001*(ms % int(1000*m_TRperiod));
         if(m_bFastMode and (icw[0]>0) and (tsec > (m_TRperiod-5.0))) fastCwId=true;
         if(!m_bFastMode) m_nspd=2560;                 // 22.5 WPM
@@ -332,7 +333,7 @@ qint64 Modulator::readData (char * data, qint64 maxSize)
           }
 /*
           if((m_ic<1000 or (4*m_symbolsLength*m_nsps - m_ic) < 1000) and (m_ic%10)==0) {
-            qDebug() << "cc" << QDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz") << m_ic << sample;
+            qDebug() << "cc" << DriftingDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz") << m_ic << sample;
           }
 */
           samples = load(postProcessSample(sample), samples);
@@ -345,7 +346,7 @@ qint64 Modulator::readData (char * data, qint64 maxSize)
           return framesGenerated * bytesPerFrame ();
         }
 
-//        qDebug() << "dd" << QDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz")
+//        qDebug() << "dd" << DriftingDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz")
 //                 << tsec << m_ic << i1;
 
         if (m_amp == 0.0) { // TODO G4WJS: compare double with zero might not be wise
@@ -360,14 +361,14 @@ qint64 Modulator::readData (char * data, qint64 maxSize)
         m_frequency0 = m_frequency;
 // done for this chunk - continue on next call
 
-//        qDebug() << "Mod B" << m_ic << i1 << 0.001*(QDateTime::currentMSecsSinceEpoch() % (1000*m_TRperiod));
+//        qDebug() << "Mod B" << m_ic << i1 << 0.001*(DriftingDateTime::currentMSecsSinceEpoch() % (1000*m_TRperiod));
 
         while (samples != end)  // pad block with silence
           {
             samples = load (0, samples);
             ++framesGenerated;
           }
-//        if(tsec<0.5) qDebug() << "ee" << QDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz")
+//        if(tsec<0.5) qDebug() << "ee" << DriftingDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz")
 //                 << tsec << m_ic << i1 << m_icmin << m_icmax;
         return framesGenerated * bytesPerFrame ();
       }
