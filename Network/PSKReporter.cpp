@@ -1,4 +1,5 @@
 #include "PSKReporter.hpp"
+#include "DriftingDateTime.hpp"
 
 // Interface for posting spots to PSK Reporter web site
 // Implemented by Edson Pereira PY2SDR
@@ -187,7 +188,7 @@ public:
 
   void send_report (bool send_residue = false);
   void eclipse_load(QString filename);
-  bool eclipse_active(QDateTime now = QDateTime::currentDateTime());
+  bool eclipse_active(QDateTime now = DriftingDateTime::currentDateTime());
 
   bool flushing ()
   {
@@ -224,7 +225,7 @@ bool PSKReporter::impl::eclipse_active(QDateTime timeutc)
 #ifdef DEBUGECLIPSE
   std::ofstream mylog("/temp/eclipse.log", std::ios_base::app);
 #endif
-  QDateTime const dateNow = QDateTime::currentDateTimeUtc ();
+  QDateTime const dateNow = DriftingDateTime::currentDateTimeUtc ();
   for (auto const& check : eclipseDates)
     {
       auto const secondsDiff = qAbs (check.secsTo (dateNow));
@@ -266,7 +267,7 @@ void PSKReporter::impl::eclipse_load(QString eclipse_file)
 #endif
     }
 #ifdef DEBUGECLIPSE
-  if (eclipse_active(QDateTime::currentDateTime().toUTC())) mylog << "Eclipse is active" << std::endl;
+  if (eclipse_active(DriftingDateTime::currentDateTime().toUTC())) mylog << "Eclipse is active" << std::endl;
   else mylog << "Eclipse is not active" << std::endl;
 #endif
 }
@@ -309,9 +310,9 @@ void PSKReporter::impl::send_report (bool send_residue)
     , observation_id_
     , static_cast<quint32> (
 #if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
-                            QDateTime::currentDateTime ().toSecsSinceEpoch ()
+                            DriftingDateTime::currentDateTime ().toSecsSinceEpoch ()
 #else
-                            QDateTime::currentDateTime ().toMSecsSinceEpoch () / 1000
+                            DriftingDateTime::currentDateTime ().toMSecsSinceEpoch () / 1000
 #endif
                             )
     , max_payload_bytes);
@@ -376,7 +377,7 @@ bool PSKReporter::addRemoteStation (QString const& call, QString const& grid, Ra
   added++;
 #endif
 
-  QDateTime qdateNow = QDateTime::currentDateTime().toUTC();
+  QDateTime qdateNow = DriftingDateTime::currentDateTime().toUTC();
   // We allow all spots through +/- 6 hours around an eclipse for the HamSCI group.
   if (!spot_cache.contains(call) || freq > 49000000 || eclipse_active(qdateNow))
     {

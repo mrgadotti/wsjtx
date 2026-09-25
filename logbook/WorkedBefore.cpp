@@ -1,4 +1,5 @@
 #include "WorkedBefore.hpp"
+#include "DriftingDateTime.hpp"
 
 #include <functional>
 #include <stdexcept>
@@ -496,7 +497,7 @@ bool WorkedBefore::add (QString const& call
           QTextStream out {&file};
           if (!file.size ())
             {
-              auto ts = QDateTime::currentDateTimeUtc ().toString ("yyyyMMdd HHmmss");
+              auto ts = DriftingDateTime::currentDateTimeUtc ().toString ("yyyyMMdd HHmmss");
               auto ver = version (true);
               out <<            // new file
                 QString {

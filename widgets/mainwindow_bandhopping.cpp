@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "DriftingDateTime.hpp"
 #include "ui_mainwindow.h"
 #include "Configuration.hpp"
 #include "models/Bands.hpp"
@@ -44,7 +45,7 @@ namespace
     auto const target_band = bands.find (requested);
     if (target_band.isEmpty ()) return 0;
 
-    auto const now = QDateTime::currentDateTimeUtc ();
+    auto const now = DriftingDateTime::currentDateTimeUtc();
     Radio::Frequency result {0};
     Radio::FrequencyDelta delta {std::numeric_limits<Radio::FrequencyDelta>::max ()};
     for (auto const& candidate : frequencies.frequency_list ())

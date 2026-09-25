@@ -1,4 +1,5 @@
 #include "Detector.hpp"
+#include "DriftingDateTime.hpp"
 #include <algorithm>
 #include <QDateTime>
 #include <QtAlgorithms>
@@ -124,7 +125,7 @@ qint64 Detector::writeData (char const * data, qint64 maxSize)
   QVector<qint64> frame_counts;
   QVector<ReceiveAudio> audio;
   qint64 const now_ms = m_stream_clock.timestamp (
-    QDateTime::currentMSecsSinceEpoch ());
+    DriftingDateTime::currentMSecsSinceEpoch());
   m_stream_clock.advance (frames_received);
   qint64 const period_ms = static_cast<qint64> (1000.0 * m_period);
   qint64 const day_ms = now_ms % 86400000;

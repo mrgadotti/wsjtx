@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "DriftingDateTime.hpp"
 #include "ui_mainwindow.h"
 #include "widegraph.h"
 #include "commons.h"
@@ -127,7 +128,7 @@ void MainWindow::jtty_save_wav()
   m_jttyLastSavedWavK0 = m_k0;
 
   //Save JTTY data to a .wav file
-  QDateTime now {QDateTime::currentDateTimeUtc ()};
+  QDateTime now {DriftingDateTime::currentDateTimeUtc()};
   qint64 ms = m_k0/12;
   auto const& tstart=now.addMSecs(-ms);
   m_fnameWE=m_config.save_directory().absoluteFilePath (tstart.toString("yyMMdd_hhmmss"));
@@ -238,7 +239,7 @@ bool MainWindow::jtty_decode(int k, int istart0, int istop)
       return m_UTCdiskDateTime.addMSecs(qRound64(1000.0 * tsync)).toUTC();
     }
     double const elapsed = qMax(0.0, double(k) / 12000.0 - double(tsync));
-    return QDateTime::currentDateTimeUtc().addMSecs(-qRound64(1000.0 * elapsed));
+    return DriftingDateTime::currentDateTimeUtc().addMSecs(-qRound64(1000.0 * elapsed));
   };
   auto jttyLineDisplayDateTimeUtc = [this, &jttyLineDateTimeUtc] (float tsync) -> QDateTime {
     if (m_diskData) {

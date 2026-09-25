@@ -70,6 +70,7 @@ set (wsjt_qt_CXXSRCS
   Decoder/decodedtext.cpp
   qmap/qmap_decode_record.cpp
   Configuration.cpp
+  Network/Ntp.cpp
   logbook/logbook.cpp
   logbook/AdifQso.cpp
   MultiSettings.cpp
@@ -106,6 +107,7 @@ set (wsjt_qt_CXXSRCS
   widgets/BandComboBox.cpp
   widgets/BandHopping.cpp
   otpgenerator.cpp
+  DriftingDateTime.cpp
   MessageFilter.cpp
   MessageFilterRules.cpp
   MessageFilterLogic.cpp

@@ -3,6 +3,7 @@
 // by Edson Pereira - PY2SDR
 
 #include "wsprnet.h"
+#include "DriftingDateTime.hpp"
 
 #include <cmath>
 #include <limits>
@@ -192,7 +193,7 @@ void WSPRNet::queueFst4wDecode (StationContext const& context, QString const& de
       auto tqrg = match.captured ("freq").toInt ();
       query.addQueryItem ("function", "wspr");
       // FST4W reports are intentionally not constrained to WSPR sub-bands.
-      auto const& date = QDateTime::currentDateTimeUtc ().addSecs (-context.TR_period * 3. / 4.).date ();
+      auto const& date = DriftingDateTime::currentDateTimeUtc().addSecs (-context.TR_period * 3. / 4.).date ();
       query.addQueryItem ("date", date.toString ("yyMMdd"));
       query.addQueryItem ("time", match.captured ("time"));
       query.addQueryItem ("sig", match.captured ("db"));
@@ -329,7 +330,7 @@ void WSPRNet::networkReply (QNetworkReply * reply)
     }
   else
     {
-      auto const now = QDateTime::currentDateTimeUtc ();
+      auto const now = DriftingDateTime::currentDateTimeUtc();
       if (QNetworkReply::NoError != reply->error ())
         {
           Q_EMIT uploadStatus (QString {"Error: %1"}.arg (reply->errorString ()));
@@ -360,7 +361,7 @@ void WSPRNet::networkReply (QNetworkReply * reply)
 
 void WSPRNet::enqueueUpload (QUrlQuery const& query, UploadSource source, PayloadKind kind, QString const& source_file, int file_batch_id)
 {
-  auto const now = QDateTime::currentDateTimeUtc ();
+  auto const now = DriftingDateTime::currentDateTimeUtc();
   auto const logical_upload_id = UploadSource::File == source ? next_logical_upload_id_++ : 0;
   if (UploadSource::File == source)
     {
@@ -410,7 +411,7 @@ void WSPRNet::scheduleWork ()
       return;
     }
 
-  auto const now = QDateTime::currentDateTimeUtc ();
+  auto const now = DriftingDateTime::currentDateTimeUtc();
   pruneExpiredUploads (now);
   QDateTime next_attempt_at;
   auto have_next_attempt = false;
@@ -471,7 +472,7 @@ void WSPRNet::pruneExpiredUploads (QDateTime const& now)
 void WSPRNet::enforcePendingLimit ()
 {
   auto const max_pending = qMax (1, retry_policy_.max_pending);
-  auto const now = QDateTime::currentDateTimeUtc ();
+  auto const now = DriftingDateTime::currentDateTimeUtc();
   pruneExpiredUploads (now);
 
   int dropped = 0;
@@ -767,7 +768,7 @@ auto WSPRNet::urlEncodeSpot (SpotQueue::value_type& query) const -> SpotQueue::v
 
 void WSPRNet::work()
 {
-  auto const now = QDateTime::currentDateTimeUtc ();
+  auto const now = DriftingDateTime::currentDateTimeUtc();
   pruneExpiredUploads (now);
 
   auto send_ready_upload = [this, &now](QQueue<PendingUpload>& uploads, UploadTarget target)

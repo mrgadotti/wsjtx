@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "DriftingDateTime.hpp"
 #include "ui_mainwindow.h"
 #include <QDesktopServices>
 #include <QUrl>
@@ -166,7 +167,7 @@ void MainWindow::on_autoButton_clicked (bool checked)
     m_nclearave=1;
     echocom_.nsum=0;
   }
-  m_tAutoOn=QDateTime::currentMSecsSinceEpoch()/1000;
+  m_tAutoOn=DriftingDateTime::currentMSecsSinceEpoch()/1000;
   if(m_mode=="Echo") m_echoRunning=false;
   check_button_color();
 }
@@ -252,7 +253,7 @@ void MainWindow::on_ClrAvgButton_clicked()
 
 void MainWindow::on_EraseButton_clicked ()
 {
-  qint64 ms=QDateTime::currentMSecsSinceEpoch();
+  qint64 ms=DriftingDateTime::currentMSecsSinceEpoch();
   if (m_config.alternate_erase_button()) {
      ui->decodedTextBrowser->erase ();
      if((ms-m_msErase)<500) {
@@ -340,7 +341,7 @@ void MainWindow::on_txb6_clicked()
 
 void MainWindow::on_lookupButton_clicked()                    //Lookup button
 {
-  qint64 ms=QDateTime::currentMSecsSinceEpoch();
+  qint64 ms=DriftingDateTime::currentMSecsSinceEpoch();
   lookup();
   if((ms-m_msErase)<500) {
     QString hisCall=ui->dxCallEntry->text();
@@ -503,11 +504,11 @@ void MainWindow::on_logQSOButton_clicked()                 //Log QSO button
   }
   // m_dateTimeQSOOn should really already be set but we'll ensure it gets set to something just in case
   if (!m_dateTimeQSOOn.isValid ()) {
-    auto now = QDateTime::currentDateTimeUtc();
+    auto now = DriftingDateTime::currentDateTimeUtc();
     m_dateTimeQSOOn = now.addSecs (-(m_ntx - 2) * int(m_TRperiod) -
                                    int(fmod(double(now.time().second()),m_TRperiod)));
   }
-  auto dateTimeQSOOff = QDateTime::currentDateTimeUtc();
+  auto dateTimeQSOOff = DriftingDateTime::currentDateTimeUtc();
   if (dateTimeQSOOff < m_dateTimeQSOOn) dateTimeQSOOff = m_dateTimeQSOOn;
   QString grid=m_hisGrid;
   if(grid=="....") grid="";
@@ -578,7 +579,7 @@ void MainWindow::on_tuneButton_clicked (bool checked)
   ui->pbBandHopping->setChecked(false); // disable band hopping
   // prevent tuning on top of a SuperFox message
   if (SpecOp::HOUND==m_specOp && m_config.superFox() && !m_tune) {
-    QDateTime now = QDateTime::currentDateTimeUtc();
+    QDateTime now = DriftingDateTime::currentDateTimeUtc();
     int s = now.time().toString("ss").toInt();
     if ((s >= 0 && s < 15) || (s >= 30 && s < 45)) {
       ui->tuneButton->setChecked (false);
@@ -808,7 +809,7 @@ void MainWindow::on_pbBestSP_clicked()
   m_bBestSPArmed = !m_bBestSPArmed;
   if(m_bBestSPArmed and !m_transmitting) ui->pbBestSP->setStyleSheet ("QPushButton{color:red}");
   if(!m_bBestSPArmed) ui->pbBestSP->setStyleSheet ("");
-  if(m_bBestSPArmed) m_dateTimeBestSP=QDateTime::currentDateTimeUtc();
+  if(m_bBestSPArmed) m_dateTimeBestSP=DriftingDateTime::currentDateTimeUtc();
 }
 
 void MainWindow::on_houndButton_clicked (bool checked)
