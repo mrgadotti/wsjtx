@@ -8,6 +8,7 @@ add_test (NAME test_pskreporter_ipfix COMMAND test_pskreporter_ipfix)
 add_executable (test_pskreporter_transport
   test_pskreporter_transport.cpp
   ${CMAKE_SOURCE_DIR}/Network/PSKReporter.cpp
+  ${CMAKE_SOURCE_DIR}/DriftingDateTime.cpp
   ${CMAKE_SOURCE_DIR}/Network/PSKReporterIPFIX.cpp
   )
 target_link_libraries (test_pskreporter_transport wsjt_cxx Qt5::Test Qt5::Network)
@@ -32,6 +33,7 @@ add_test (NAME test_map65_pskreporter_decode COMMAND test_map65_pskreporter_deco
 add_executable (test_wsprnet_upload
   test_wsprnet_upload.cpp
   ${CMAKE_SOURCE_DIR}/Network/wsprnet.cpp
+  ${CMAKE_SOURCE_DIR}/DriftingDateTime.cpp
   )
 target_link_libraries (test_wsprnet_upload Qt5::Test Qt5::Network)
 add_test (NAME test_wsprnet_upload COMMAND test_wsprnet_upload)

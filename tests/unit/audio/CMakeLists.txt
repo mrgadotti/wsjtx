@@ -52,7 +52,8 @@ add_executable (test_audio_input_stream_descriptor
   ${CMAKE_SOURCE_DIR}/Audio/AudioInputSource.hpp
   ${CMAKE_SOURCE_DIR}/Audio/FixtureAudioInput.cpp
   ${CMAKE_SOURCE_DIR}/DecDataMutex.cpp
-  ${CMAKE_SOURCE_DIR}/Detector/Detector.cpp)
+  ${CMAKE_SOURCE_DIR}/Detector/Detector.cpp
+  ${CMAKE_SOURCE_DIR}/DriftingDateTime.cpp)
 target_link_libraries (test_audio_input_stream_descriptor
   wsjt_qtmm Qt5::Core Qt5::Test Qt5::Multimedia)
 add_test (NAME test_audio_input_stream_descriptor
@@ -63,7 +64,8 @@ add_executable (test_receive_audio_handoff
   receive_reference_probe.f90
   ${CMAKE_SOURCE_DIR}/Audio/AudioDevice.cpp
   ${CMAKE_SOURCE_DIR}/DecDataMutex.cpp
-  ${CMAKE_SOURCE_DIR}/Detector/Detector.cpp)
+  ${CMAKE_SOURCE_DIR}/Detector/Detector.cpp
+  ${CMAKE_SOURCE_DIR}/DriftingDateTime.cpp)
 target_link_libraries (test_receive_audio_handoff
   wsjt_fort_common Qt5::Core Qt5::Test Qt5::Multimedia)
 target_include_directories (test_receive_audio_handoff PRIVATE ${CMAKE_BINARY_DIR})
@@ -114,7 +116,8 @@ add_executable (test_fast_decode_ownership
   ${CMAKE_SOURCE_DIR}/FastDecode.cpp
   ${CMAKE_SOURCE_DIR}/Audio/AudioDevice.cpp
   ${CMAKE_SOURCE_DIR}/DecDataMutex.cpp
-  ${CMAKE_SOURCE_DIR}/Detector/Detector.cpp)
+  ${CMAKE_SOURCE_DIR}/Detector/Detector.cpp
+  ${CMAKE_SOURCE_DIR}/DriftingDateTime.cpp)
 target_link_libraries (test_fast_decode_ownership
   wsjt_fort_common Qt5::Core Qt5::Test Qt5::Multimedia)
 target_include_directories (test_fast_decode_ownership PRIVATE ${CMAKE_BINARY_DIR})
