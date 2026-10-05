@@ -56,6 +56,7 @@ namespace
       ui.advanced_tab,
       ui.alerts_tab,
       ui.filters_tab,
+      ui.sync_tab,
     };
   }
 
@@ -72,6 +73,7 @@ namespace
       ui.advanced_tab,
       ui.alerts_tab,
       ui.filters_tab,
+      ui.sync_tab,
     };
   }
 
@@ -173,6 +175,7 @@ void TestConfigurationDialogLayout::pagesRetainIdentityAndScrollingPolicy ()
     "advanced_tab",
     "alerts_tab",
     "filters_tab",
+    "sync_tab",
   };
 
   QCOMPARE (ui.configuration_tabs->count (), page_names.size ());

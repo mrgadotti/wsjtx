@@ -190,6 +190,7 @@ void SettingsDialogLayout::install (Ui::configuration_dialog const& ui)
        ui.advanced_tab,
        ui.alerts_tab,
        ui.filters_tab,
+       ui.sync_tab,
        })
     {
       installPageScrollArea (page);
@@ -226,6 +227,7 @@ QSize SettingsDialogLayout::preferredWindowSize (QDialog& dialog,
        ui.advanced_tab,
        ui.alerts_tab,
        ui.filters_tab,
+       ui.sync_tab,
        })
     {
       ui.configuration_tabs->setCurrentWidget (page);

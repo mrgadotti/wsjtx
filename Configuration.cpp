@@ -2526,6 +2526,12 @@ Configuration::impl::impl (Configuration * self, QNetworkAccessManager * network
     ui_->cb_twoDays,
   });
 
+  register_settings_focus_page (ui_->sync_tab, {
+    ui_->ntp_server_line_edit,
+    ui_->ntp_sync_interval_combo_box,
+    ui_->ntp_sync_now_push_button,
+  });
+
   auto update_visibility_when_toggled = [this] (QAbstractButton *button) {
     connect (button, &QAbstractButton::toggled, this, &Configuration::impl::check_visibility);
   };
