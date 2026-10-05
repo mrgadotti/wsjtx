@@ -52,8 +52,39 @@ jobs:
             echo "tag=$TAG"
           } >> "$GITHUB_OUTPUT"
 
-  macos:
+  # A fork starts with empty caches, so Qt, Boost, Hamlib and the other pinned
+  # macOS dependencies are built from source. That does not fit in the 45
+  # minute build job, so populate the caches here first (generous timeout);
+  # the build jobs below then restore them. Saved caches survive even if a
+  # later job fails, so a re-run picks up where this left off.
+  macos-arm64-deps:
     needs: prepare
+    runs-on: macos-15
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/warm-macos-deps
+        with:
+          arch: arm64
+          runner: macos-15
+          deployment_target: "11.0"
+          hamlib_branch: "4.7.2"
+
+  macos-intel-deps:
+    needs: prepare
+    runs-on: macos-15-intel
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/warm-macos-deps
+        with:
+          arch: x86_64
+          runner: macos-15-intel
+          deployment_target: "10.13"
+          hamlib_branch: "4.7.2"
+
+  macos:
+    needs: [prepare, macos-arm64-deps]
     uses: ./.github/workflows/build-macos.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
@@ -66,7 +97,7 @@ jobs:
     secrets: inherit
 
   macos-intel:
-    needs: prepare
+    needs: [prepare, macos-intel-deps]
     uses: ./.github/workflows/build-macos.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
