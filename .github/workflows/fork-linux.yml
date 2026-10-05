@@ -1,0 +1,116 @@
+name: Fork Linux
+
+# Self-contained Linux build for forks: no GHCR builder images (the official
+# Linux workflows pull images owned by the WSJTX organisation, which a fork
+# cannot use). Builds Hamlib from source, then WSJT-X, and packages a .deb.
+#
+# Runs on every push to the fork's working branches, and is reused by
+# fork-release.yml.
+
+on:
+  push:
+    branches: ["pp5mgt_*"]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        description: "WSJT-X version string used in artifact names"
+        required: false
+        type: string
+        default: ""
+      hamlib_branch:
+        description: "Hamlib tag/branch to build"
+        required: false
+        type: string
+        default: "4.7.2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-linux-${{ github.workflow }}-${{ github.ref }}-${{ inputs.version }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  deb:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+            deb_arch: amd64
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            deb_arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      HAMLIB_REF: ${{ inputs.hamlib_branch || '4.7.2' }}
+      HAMLIB_PREFIX: /opt/hamlib
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake gfortran ccache pkg-config git ca-certificates \
+            autoconf automake libtool texinfo dpkg-dev fakeroot \
+            libfftw3-dev libboost-all-dev portaudio19-dev libusb-1.0-0-dev \
+            libudev-dev libreadline-dev libsqlite3-dev libxml2-dev libltdl-dev \
+            qtbase5-dev qtmultimedia5-dev libqt5multimedia5-plugins \
+            libqt5serialport5-dev libqt5websockets5-dev libqt5sql5-sqlite \
+            qttools5-dev qttools5-dev-tools
+
+      - name: Cache Hamlib
+        id: hamlib-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.HAMLIB_PREFIX }}
+          key: fork-hamlib-${{ matrix.arch }}-${{ env.HAMLIB_REF }}-${{ hashFiles('.github/scripts/build-hamlib-linux.sh') }}
+
+      - name: Build Hamlib
+        if: steps.hamlib-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo mkdir -p "$HAMLIB_PREFIX" && sudo chown "$USER" "$HAMLIB_PREFIX"
+          cd "$RUNNER_TEMP"
+          bash "$GITHUB_WORKSPACE/.github/scripts/build-hamlib-linux.sh" "$HAMLIB_REF" "$HAMLIB_PREFIX"
+
+      - name: Restore ccache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ccache
+          key: fork-ccache-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: fork-ccache-${{ matrix.arch }}-
+
+      - name: Configure
+        run: |
+          export PKG_CONFIG_PATH="$HAMLIB_PREFIX/lib/pkgconfig"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$HAMLIB_PREFIX" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DWSJT_GENERATE_DOCS=OFF -DWSJT_SKIP_MANPAGES=ON \
+            -DWSJT_BUILD_TESTS=OFF -DWSJT_ENABLE_TESTS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel "$(nproc)"
+
+      - name: Package .deb
+        working-directory: build
+        run: cpack -G DEB
+
+      - name: Name the artifact
+        id: art
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          ls -la build/*.deb
+          echo "name=wsjtx-${VERSION:-devel}-linux-${{ matrix.arch }}-deb" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.art.outputs.name }}
+          path: build/*.deb
+          if-no-files-found: error
+          retention-days: 30

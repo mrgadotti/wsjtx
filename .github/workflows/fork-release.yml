@@ -3,12 +3,12 @@ name: Fork Release
 # Fork-friendly release workflow.
 #
 # Mirrors the official release.yml platform matrix (macOS arm64 + intel,
-# Linux x86_64 + aarch64, Windows x86_64) and attaches the same asset types
+# Linux x86_64 + aarch64 via fork-linux.yml, Windows x86_64) and attaches the same asset types
 # to a Release, but without the parts a fork cannot do: the upstream
 # WSJTX/wsjtx force-push and its CROSS_REPO_TOKEN secret.
 #
 # Trigger it from the Actions tab (Fork Release -> Run workflow). The version
-# is read from CMakeLists.txt, matching the same source of truth CI uses.
+# is read from release-state.txt, the same source of truth the official CI uses.
 
 on:
   workflow_dispatch:
@@ -24,97 +24,84 @@ jobs:
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
+      channel: ${{ steps.v.outputs.channel }}
+      rc_number: ${{ steps.v.outputs.rc_number }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: v
         run: |
-          VERSION=$(grep -E '^\s*VERSION\s+[0-9]' CMakeLists.txt | head -1 | awk '{print $2}' | cut -d. -f1-3)
-          if [ -z "$VERSION" ]; then
-            echo "::error::Could not derive VERSION from CMakeLists.txt"
+          STATE=$(python3 .github/scripts/release-policy.py read-state)
+          VERSION=$(jq -r .version <<<"$STATE")
+          CHANNEL=$(jq -r .channel <<<"$STATE")
+          RC_NUMBER=$(jq -r .rc <<<"$STATE")
+          if [ -z "$VERSION" ] || [ "$VERSION" = null ]; then
+            echo "::error::Could not derive version from release-state.txt"
             exit 1
           fi
+          [ "$RC_NUMBER" = null ] && RC_NUMBER=""
           TAG="${{ inputs.tag }}"
           if [ -z "$TAG" ]; then
             TAG="fork-v${VERSION}-b${GITHUB_RUN_NUMBER}"
           fi
-          echo "Derived version: $VERSION"
+          echo "Derived version: $VERSION ($CHANNEL${RC_NUMBER:+ rc$RC_NUMBER})"
           echo "Release tag:     $TAG"
           {
             echo "version=$VERSION"
+            echo "channel=$CHANNEL"
+            echo "rc_number=$RC_NUMBER"
             echo "tag=$TAG"
           } >> "$GITHUB_OUTPUT"
 
-  macos-arm64-qt:
-    needs: prepare
-    uses: ./.github/workflows/prepare-macos-qt.yml
-    with:
-      arch: "arm64"
-      runner: "macos-15"
-      deployment_target: "11.0"
-
-  macos-intel-qt:
-    needs: prepare
-    uses: ./.github/workflows/prepare-macos-qt.yml
-    with:
-      arch: "x86_64"
-      runner: "macos-15-intel"
-      deployment_target: "10.13"
-
   macos:
-    needs: [prepare, macos-arm64-qt]
+    needs: prepare
     uses: ./.github/workflows/build-macos.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
-      hamlib_branch: "4.7.1"
+      hamlib_branch: "4.7.2"
       arch: "arm64"
       runner: "macos-15"
       deployment_target: "11.0"
+      release_channel: ${{ needs.prepare.outputs.channel }}
+      rc_number: ${{ needs.prepare.outputs.rc_number }}
     secrets: inherit
 
   macos-intel:
-    needs: [prepare, macos-intel-qt]
+    needs: prepare
     uses: ./.github/workflows/build-macos.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
-      hamlib_branch: "4.7.1"
+      hamlib_branch: "4.7.2"
       arch: "x86_64"
       runner: "macos-15-intel"
       deployment_target: "10.13"
+      release_channel: ${{ needs.prepare.outputs.channel }}
+      rc_number: ${{ needs.prepare.outputs.rc_number }}
     secrets: inherit
 
   linux:
     needs: prepare
-    uses: ./.github/workflows/build-linux.yml
+    uses: ./.github/workflows/fork-linux.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
-      hamlib_branch: "4.7.1"
-      arch: "x86_64"
-    secrets: inherit
-
-  linux-arm:
-    needs: prepare
-    uses: ./.github/workflows/build-linux.yml
-    with:
-      version: ${{ needs.prepare.outputs.version }}
-      hamlib_branch: "4.7.1"
-      arch: "aarch64"
-    secrets: inherit
+      hamlib_branch: "4.7.2"
 
   windows:
     needs: prepare
     uses: ./.github/workflows/build-windows.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
-      hamlib_branch: "4.7.1"
+      hamlib_branch: "4.7.2"
+      release_channel: ${{ needs.prepare.outputs.channel }}
+      rc_number: ${{ needs.prepare.outputs.rc_number }}
     secrets: inherit
 
   release:
-    needs: [prepare, macos, macos-intel, linux, linux-arm, windows]
+    needs: [prepare, macos, macos-intel, linux, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -144,15 +131,15 @@ jobs:
           labels=(
             "macOS arm64 .pkg"
             "macOS x86_64 .pkg"
-            "Linux x86_64 .AppImage"
-            "Linux aarch64 .AppImage"
+            "Linux x86_64 .deb"
+            "Linux aarch64 .deb"
             "Windows x86_64 .exe"
           )
           patterns=(
             "artifacts/wsjtx-${VERSION}-arm64-macOS.pkg/*.pkg"
             "artifacts/wsjtx-${VERSION}-x86_64-macOS.pkg/*.pkg"
-            "artifacts/wsjtx-${VERSION}-linux-x86_64-AppImage/*.AppImage"
-            "artifacts/wsjtx-${VERSION}-linux-aarch64-AppImage/*.AppImage"
+            "artifacts/wsjtx-${VERSION}-linux-x86_64-deb/*.deb"
+            "artifacts/wsjtx-${VERSION}-linux-aarch64-deb/*.deb"
             "artifacts/wsjtx-${VERSION}-windows-x86_64-installer/*.exe"
           )
           missing=0
